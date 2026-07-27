@@ -1033,11 +1033,6 @@ if __name__ == '__main__':
     print("=========================================================")
     print("  Smart Face Recognition Attendance System Server Running  ")
     print(f"  MongoDB Database: {'Connected (' + DB_NAME + ')' if USE_MONGO else 'CSV Fallback Active'}")
-    print("  HTTPS Mobile Access: https://10.99.146.72:5000  ")
-    print("  HTTPS Local Access:  https://127.0.0.1:5000  ")
+    print("  Local Access:  http://127.0.0.1:5000  ")
     print("=========================================================")
-    try:
-        app.run(host='0.0.0.0', port=5000, debug=True, ssl_context='adhoc')
-    except Exception as e:
-        print(f"[WARNING] HTTPS SSL start failed ({e}). Falling back to HTTP.")
-        app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

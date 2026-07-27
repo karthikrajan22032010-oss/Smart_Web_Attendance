@@ -168,9 +168,70 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Camera Control State System
+    let isCameraActive = false;
+
+    function startCamera() {
+        const serverVideoImg = document.getElementById('serverVideoImg');
+        const camStandbyScreen = document.getElementById('camStandbyScreen');
+        const camStatusMsg = document.getElementById('camStatusMsg');
+        const btnToggleCamera = document.getElementById('btnToggleCamera');
+        const videoOverlayHUD = document.getElementById('videoOverlayHUD');
+
+        isCameraActive = true;
+        if (serverVideoImg) serverVideoImg.src = '/video_feed?' + new Date().getTime();
+        if (camStandbyScreen) camStandbyScreen.style.display = 'none';
+        if (videoOverlayHUD) videoOverlayHUD.style.display = 'block';
+
+        if (camStatusMsg) {
+            camStatusMsg.innerHTML = `<i class="fa-solid fa-shield-halved text-success"></i> OpenCV Face Match Active`;
+        }
+        if (btnToggleCamera) {
+            btnToggleCamera.className = 'btn btn-danger btn-sm';
+            btnToggleCamera.innerHTML = `<i class="fa-solid fa-power-off"></i> Turn Camera OFF`;
+        }
+    }
+
+    function stopCamera() {
+        const serverVideoImg = document.getElementById('serverVideoImg');
+        const camStandbyScreen = document.getElementById('camStandbyScreen');
+        const camStatusMsg = document.getElementById('camStatusMsg');
+        const btnToggleCamera = document.getElementById('btnToggleCamera');
+        const videoOverlayHUD = document.getElementById('videoOverlayHUD');
+
+        isCameraActive = false;
+        if (serverVideoImg) serverVideoImg.src = '';
+        if (camStandbyScreen) camStandbyScreen.style.display = 'flex';
+        if (videoOverlayHUD) videoOverlayHUD.style.display = 'none';
+
+        if (camStatusMsg) {
+            camStatusMsg.innerHTML = `<i class="fa-solid fa-video-slash text-danger"></i> Camera Standby (OFF)`;
+        }
+        if (btnToggleCamera) {
+            btnToggleCamera.className = 'btn btn-success btn-sm';
+            btnToggleCamera.innerHTML = `<i class="fa-solid fa-power-off"></i> Turn Camera ON`;
+        }
+    }
+
+    function toggleCamera() {
+        if (isCameraActive) {
+            stopCamera();
+            showToast('Camera turned OFF', 'warning');
+        } else {
+            startCamera();
+            showToast('Camera turned ON', 'success');
+        }
+    }
+
+    const btnToggleCamera = document.getElementById('btnToggleCamera');
+    if (btnToggleCamera) {
+        btnToggleCamera.addEventListener('click', toggleCamera);
+    }
+
     function showLogin() {
         if (loginSection) loginSection.style.display = 'flex';
         if (dashboardSection) dashboardSection.style.display = 'none';
+        stopCamera();
     }
 
     function showDashboard(className) {
@@ -178,6 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dashboardSection) dashboardSection.style.display = 'flex';
         if (activeClassNameEl) activeClassNameEl.textContent = className || 'Classroom';
         fetchAttendanceData();
+        startCamera();
     }
 
     // Quick Class Chips
@@ -1006,207 +1068,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuthSession();
     setInterval(fetchAttendanceData, 2500);
 
-    // ==========================================================================
-    // THREE.JS 3D WEBGL ENGINE & INTERACTIVE CARD TILT SYSTEM
-    // ==========================================================================
-
-    function init3DParticleMesh() {
-        const container = document.getElementById('particlesBg');
-        if (!container) return;
-
-        // Check if Three.js is loaded
-        if (typeof THREE === 'undefined') {
-            console.warn('[3D Engine] Three.js library not loaded, using CSS backdrop.');
-            return;
-        }
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-        camera.position.z = 400;
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        // Theme Color Palette Mapping
-        const themeColors = {
-            sapphire: 0x38bdf8,
-            gold: 0xfbbf24,
-            emerald: 0x34d399,
-            amethyst: 0xc084fc,
-            titanium: 0x22d3ee
-        };
-
-        function getActiveThemeHex() {
-            const currentTheme = document.documentElement.getAttribute('data-theme') || 'sapphire';
-            return themeColors[currentTheme] || 0x38bdf8;
-        }
-
-        // Create 3D Particle Cloud
-        const particleCount = 220;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const velocities = [];
-
-        for (let i = 0; i < particleCount * 3; i += 3) {
-            positions[i] = (Math.random() - 0.5) * 800;
-            positions[i + 1] = (Math.random() - 0.5) * 800;
-            positions[i + 2] = (Math.random() - 0.5) * 800;
-
-            velocities.push({
-                x: (Math.random() - 0.5) * 0.4,
-                y: (Math.random() - 0.5) * 0.4,
-                z: (Math.random() - 0.5) * 0.4
-            });
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        // Canvas Particle Texture
-        const canvas = document.createElement('canvas');
-        canvas.width = 16;
-        canvas.height = 16;
-        const ctx = canvas.getContext('2d');
-        const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
-        grad.addColorStop(0, 'rgba(255,255,255,1)');
-        grad.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 16, 16);
-
-        const pTexture = new THREE.CanvasTexture(canvas);
-        const material = new THREE.PointsMaterial({
-            color: getActiveThemeHex(),
-            size: 6,
-            map: pTexture,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-
-        const particles = new THREE.Points(geometry, material);
-        scene.add(particles);
-
-        // 3D Floating Geometry Nodes (Octahedron & Dodecahedron)
-        const nodeGeo1 = new THREE.OctahedronGeometry(45, 0);
-        const nodeGeo2 = new THREE.IcosahedronGeometry(60, 0);
-
-        const wireMat = new THREE.MeshBasicMaterial({
-            color: getActiveThemeHex(),
-            wireframe: true,
-            transparent: true,
-            opacity: 0.25
-        });
-
-        const nodeMesh1 = new THREE.Mesh(nodeGeo1, wireMat);
-        nodeMesh1.position.set(-250, 120, -100);
-        scene.add(nodeMesh1);
-
-        const nodeMesh2 = new THREE.Mesh(nodeGeo2, wireMat.clone());
-        nodeMesh2.position.set(280, -140, -120);
-        scene.add(nodeMesh2);
-
-        // Dynamic Line Mesh
-        const maxLines = 150;
-        const linePositions = new Float32Array(maxLines * 6);
-        const lineGeometry = new THREE.BufferGeometry();
-        lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
-
-        const lineMaterial = new THREE.LineBasicMaterial({
-            color: getActiveThemeHex(),
-            transparent: true,
-            opacity: 0.18
-        });
-
-        const lineMesh = new THREE.LineSegments(lineGeometry, lineMaterial);
-        scene.add(lineMesh);
-
-        // Parallax Mouse Interaction
-        let mouseX = 0, mouseY = 0;
-        let targetMouseX = 0, targetMouseY = 0;
-
-        window.addEventListener('mousemove', (e) => {
-            targetMouseX = (e.clientX - window.innerWidth / 2) * 0.15;
-            targetMouseY = (e.clientY - window.innerHeight / 2) * 0.15;
-        });
-
-        // Theme Switch Color Observer
-        const observer = new MutationObserver(() => {
-            const newHex = getActiveThemeHex();
-            material.color.setHex(newHex);
-            wireMat.color.setHex(newHex);
-            lineMaterial.color.setHex(newHex);
-        });
-
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
-        // High FPS 60FPS Render Loop
-        function animate3D() {
-            requestAnimationFrame(animate3D);
-
-            // Smooth camera lerp
-            mouseX += (targetMouseX - mouseX) * 0.05;
-            mouseY += (targetMouseY - mouseY) * 0.05;
-            camera.position.x = mouseX;
-            camera.position.y = -mouseY;
-            camera.lookAt(scene.position);
-
-            // Rotate 3D polyhedra
-            nodeMesh1.rotation.x += 0.005;
-            nodeMesh1.rotation.y += 0.007;
-            nodeMesh2.rotation.x -= 0.004;
-            nodeMesh2.rotation.y += 0.006;
-
-            // Move particles
-            const posArr = geometry.attributes.position.array;
-            let lineIdx = 0;
-
-            for (let i = 0; i < particleCount; i++) {
-                const idx = i * 3;
-                posArr[idx] += velocities[i].x;
-                posArr[idx + 1] += velocities[i].y;
-                posArr[idx + 2] += velocities[i].z;
-
-                if (Math.abs(posArr[idx]) > 400) velocities[i].x *= -1;
-                if (Math.abs(posArr[idx + 1]) > 400) velocities[i].y *= -1;
-                if (Math.abs(posArr[idx + 2]) > 400) velocities[i].z *= -1;
-
-                // Connect nearby points
-                for (let j = i + 1; j < particleCount; j++) {
-                    const jdx = j * 3;
-                    const dx = posArr[idx] - posArr[jdx];
-                    const dy = posArr[idx + 1] - posArr[jdx + 1];
-                    const dz = posArr[idx + 2] - posArr[jdx + 2];
-                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-                    if (dist < 110 && lineIdx < maxLines * 6) {
-                        linePositions[lineIdx++] = posArr[idx];
-                        linePositions[lineIdx++] = posArr[idx + 1];
-                        linePositions[lineIdx++] = posArr[idx + 2];
-                        linePositions[lineIdx++] = posArr[jdx];
-                        linePositions[lineIdx++] = posArr[jdx + 1];
-                        linePositions[lineIdx++] = posArr[jdx + 2];
-                    }
-                }
-            }
-
-            geometry.attributes.position.needsUpdate = true;
-            lineGeometry.attributes.position.needsUpdate = true;
-
-            renderer.render(scene, camera);
-        }
-
-        animate3D();
-
-        // Responsive Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    }
-
-    // 3D Card Interactive Mouse Tilt Physics
+    // 3D Card Interactive Mouse Tilt Physics System
     function init3DCardTilt() {
         document.querySelectorAll('.tilt-card').forEach(card => {
             card.addEventListener('mousemove', (e) => {
@@ -1229,9 +1091,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Launch 3D System
+    // Launch 3D Tilt System
     setTimeout(() => {
-        init3DParticleMesh();
         init3DCardTilt();
     }, 200);
 });

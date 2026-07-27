@@ -194,10 +194,15 @@
                     </div>
 
                     <div class="video-container" id="videoContainer">
-                        <img class="video-feed-img" id="serverVideoImg" src="{{ url_for('video_feed') }}" alt="Live Camera Feed Stream">
+                        <img class="video-feed-img" id="serverVideoImg" src="" alt="Live Camera Feed Stream">
                         <video id="clientVideo" autoplay playsinline muted style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></video>
                         <canvas id="clientCanvas" style="display: none;"></canvas>
-                        <div class="video-overlay">
+                        <div class="video-standby-screen" id="camStandbyScreen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(15, 23, 42, 0.95); z-index: 5;">
+                            <i class="fa-solid fa-video-slash" style="font-size: 48px; color: var(--text-muted); margin-bottom: 12px;"></i>
+                            <h4 style="color: var(--text-main); font-weight: 600;">Camera Standby (OFF)</h4>
+                            <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Camera turns on automatically after login or click below.</p>
+                        </div>
+                        <div class="video-overlay" id="videoOverlayHUD">
                             <div class="scan-line"></div>
                             <div class="laser-sweep-beam"></div>
                             <div class="hud-ring 3d-hud-compass"></div>
@@ -212,8 +217,11 @@
                     </div>
 
                     <div class="video-footer">
-                        <span class="status-msg" id="camStatusMsg"><i class="fa-solid fa-shield-halved"></i> OpenCV Face Match Active</span>
+                        <span class="status-msg" id="camStatusMsg"><i class="fa-solid fa-video-slash text-danger"></i> Camera Standby (OFF)</span>
                         <div class="cam-action-btns" style="display: flex; gap: 8px;">
+                            <button class="btn btn-danger btn-sm" id="btnToggleCamera" title="Turn Camera ON or OFF">
+                                <i class="fa-solid fa-power-off"></i> Turn Camera OFF
+                            </button>
                             <button class="btn btn-outline btn-xs" id="btnToggleCamSource" title="Switch between Device Camera and Server Camera">
                                 <i class="fa-solid fa-mobile-screen"></i> Use Device Camera
                             </button>
