@@ -461,11 +461,15 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="manualTime">Time In</label>
+                            <label for="manualDate"><i class="fa-solid fa-calendar-day text-primary"></i> Attendance / OD Date</label>
+                            <input type="date" id="manualDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="manualTime"><i class="fa-solid fa-clock text-info"></i> Time In</label>
                             <input type="time" id="manualTime" required>
                         </div>
                         <div class="form-group">
-                            <label for="manualStatus">Attendance Status / OD</label>
+                            <label for="manualStatus"><i class="fa-solid fa-shield-halved text-warning"></i> Attendance Status / OD</label>
                             <select id="manualStatus">
                                 <option value="OD (On Duty)">OD (On Duty / Official Duty)</option>
                                 <option value="On Time">On Time (Late Approval)</option>

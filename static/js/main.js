@@ -927,8 +927,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (openManualModalBtn) {
         openManualModalBtn.addEventListener('click', () => {
             const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            const manualDateEl = document.getElementById('manualDate');
+            if (manualDateEl) manualDateEl.value = `${year}-${month}-${day}`;
+
             document.getElementById('manualTime').value = `${hours}:${minutes}`;
             renderStudentCheckboxes();
             toggleModal(manualModal, true);
@@ -948,6 +955,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
             const checkedNames = Array.from(checkedBoxes).map(cb => cb.value);
             const customName = document.getElementById('manualName').value.trim();
+            const date = document.getElementById('manualDate') ? document.getElementById('manualDate').value : '';
             const time = document.getElementById('manualTime').value;
             const status = document.getElementById('manualStatus').value;
             const remarks = document.getElementById('manualRemarks') ? document.getElementById('manualRemarks').value.trim() : '';
@@ -970,7 +978,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch('/api/manual_entry', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ names: checkedNames, time, status, remarks })
+                    body: JSON.stringify({ names: checkedNames, date, time, status, remarks })
                 });
 
                 const result = await res.json();

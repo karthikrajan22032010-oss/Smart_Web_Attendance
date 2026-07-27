@@ -272,14 +272,14 @@ def sync_mongo(data_dict):
             print(f"[WARNING] MongoDB Sync Error: {mongo_err}")
 
 
-def mark_attendance(name, custom_time=None, custom_status=None, remarks=None):
+def mark_attendance(name, custom_time=None, custom_status=None, remarks=None, custom_date=None):
     """
     Logs or updates attendance in class-isolated CSV & MongoDB database.
-    Supports teacher override for OD (On Duty), Late Approval, and Permission.
+    Supports teacher override for OD (On Duty), Late Approval, Permission, and Custom Dates.
     Returns (success: bool, status_message: str)
     """
     now = get_current_now()
-    today_date = now.strftime("%Y-%m-%d")
+    today_date = custom_date.strip() if (custom_date and str(custom_date).strip()) else now.strftime("%Y-%m-%d")
     now_time_24 = now.strftime("%H:%M:%S")
     time_str = custom_time if custom_time else now.strftime("%I:%M:%S %p")
     short_time_str = now.strftime("%I:%M %p")
@@ -864,6 +864,7 @@ def manual_entry():
         return jsonify({"success": False, "message": "Missing required time field"}), 400
 
     raw_time = data['time']
+    custom_date = str(data.get('date', '')).strip()
     custom_status = data.get('status', 'Auto')
     remarks = data.get('remarks', '').strip()
 
@@ -882,10 +883,11 @@ def manual_entry():
 
     results = []
     for name in names:
-        success, msg = mark_attendance(name, custom_time=formatted_time, custom_status=custom_status, remarks=remarks)
+        success, msg = mark_attendance(name, custom_time=formatted_time, custom_status=custom_status, remarks=remarks, custom_date=custom_date)
         results.append(msg)
 
-    return jsonify({"success": True, "message": f"Successfully processed {len(names)} student(s)!"})
+    date_label = f" for date {custom_date}" if custom_date else ""
+    return jsonify({"success": True, "message": f"Successfully processed {len(names)} student(s){date_label}!"})
 
 
 @app.route('/api/register_face', methods=['POST'])
