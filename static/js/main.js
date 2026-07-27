@@ -1223,12 +1223,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const rollNo = document.getElementById('registerRollNo') ? document.getElementById('registerRollNo').value.trim() : '';
             const fileInput = document.getElementById('faceImage');
 
-            if (!name || fileInput.files.length === 0) return;
+            if (!name) {
+                showToast('Please enter student full name!', 'danger');
+                return;
+            }
 
             const formData = new FormData();
             formData.append('name', name);
             formData.append('roll_no', rollNo);
-            formData.append('file', fileInput.files[0]);
+            if (fileInput && fileInput.files.length > 0) {
+                formData.append('file', fileInput.files[0]);
+            }
 
             try {
                 const res = await fetch('/api/register_face', {

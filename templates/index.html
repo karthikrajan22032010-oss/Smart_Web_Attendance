@@ -502,11 +502,11 @@
             </div>
             <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
                 
-                <!-- Section 1: Upload Face Photo & Register Student -->
+                <!-- Section 1: Add New Student Details & Reference Photo -->
                 <form id="registerFaceForm" enctype="multipart/form-data" style="margin: 0;">
                     <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px;">
                         <h4 style="font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-camera"></i> 1. Register Student Details & Reference Face Photo
+                            <i class="fa-solid fa-user-plus"></i> Add Student to Class & Reference Face Photo
                         </h4>
                         <div class="form-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <div class="form-group" style="flex: 1.2; min-width: 150px;">
@@ -518,35 +518,15 @@
                                 <input type="text" id="registerRollNo" placeholder="e.g. 101">
                             </div>
                             <div class="form-group" style="flex: 1.2; min-width: 150px;">
-                                <label for="faceImage">Reference Face Photo</label>
-                                <input type="file" id="faceImage" accept="image/*" required>
+                                <label for="faceImage">Face Photo (Opt)</label>
+                                <input type="file" id="faceImage" accept="image/*">
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary btn-sm" style="margin-top: 8px; width: 100%;">
-                            <i class="fa-solid fa-upload"></i> Save Student Details & Reference Photo
+                            <i class="fa-solid fa-floppy-disk"></i> Save Student Details & Add to Student Name List
                         </button>
                     </div>
                 </form>
-
-                <!-- Section 2: Bulk Add / Paste Student Name List Template -->
-                <details style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px;">
-                    <summary style="cursor: pointer; font-weight: 600; color: var(--primary); font-size: 14px;">
-                        <i class="fa-solid fa-file-import"></i> 2. Bulk Add / Paste Student Name List Template
-                    </summary>
-                    <div style="margin-top: 10px;">
-                        <div class="roster-add-group" style="display: flex; gap: 8px; margin-bottom: 10px;">
-                            <input type="text" id="rosterStudentName" placeholder="Single Name without Photo" style="flex: 1.2;">
-                            <input type="text" id="rosterStudentRollNo" placeholder="Roll No (Opt)" style="flex: 0.8;">
-                            <button type="button" class="btn btn-outline btn-sm" id="btnAddRosterStudent">
-                                <i class="fa-solid fa-plus"></i> Add
-                            </button>
-                        </div>
-                        <textarea id="bulkRosterText" rows="3" placeholder="Paste student names here (one per line):&#10;101 - Alex Johnson&#10;102 - Emily Davis" style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 6px; font-family: monospace; font-size: 13px; margin-bottom: 8px;"></textarea>
-                        <button type="button" class="btn btn-secondary btn-sm" id="btnBulkAddRoster">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> Import Text List Template
-                        </button>
-                    </div>
-                </details>
 
                 <!-- Section 3: STUDENT NAME LIST Box -->
                 <div class="manage-roster-list-section" style="background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px;">
