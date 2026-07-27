@@ -1032,27 +1032,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
             container.innerHTML = roster.map(item => {
                 const sName = typeof item === 'object' ? item.name : item;
-                const rNo = (typeof item === 'object' && item.roll_no && item.roll_no !== '-') ? ` [Roll No: ${item.roll_no}]` : '';
+                const rNo = (typeof item === 'object' && item.roll_no && item.roll_no !== '-') ? item.roll_no : '-';
+                const hasPhoto = typeof item === 'object' && item.photo;
+                const photoBadge = hasPhoto 
+                    ? `<span class="badge badge-ontime" style="font-size: 11px;"><i class="fa-solid fa-camera text-success"></i> Photo Saved</span>`
+                    : `<span class="badge badge-late" style="font-size: 11px; opacity: 0.7;"><i class="fa-solid fa-file-lines"></i> Roster Only</span>`;
+
                 return `
-                    <div class="student-manage-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 8px;">
-                        <span style="font-weight: 600; color: var(--text-main); font-size: 13px;"><i class="fa-solid fa-graduation-cap text-primary" style="margin-right: 6px;"></i> ${escapeHtml(sName)}${escapeHtml(rNo)}</span>
-                        <button type="button" class="btn btn-danger btn-xs btnRemoveRosterStudent" data-name="${escapeHtml(sName)}" title="Remove student from class roster template">
-                            <i class="fa-solid fa-user-minus"></i> Remove
+                    <div class="student-manage-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; gap: 3px;">
+                            <div style="font-weight: 700; color: var(--text-main); font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-user text-primary"></i> ${escapeHtml(sName)}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
+                                <span><i class="fa-solid fa-id-card"></i> Roll No: <strong>${escapeHtml(rNo)}</strong></span>
+                                ${photoBadge}
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-xs btnTotalRemoveStudent" data-name="${escapeHtml(sName)}" title="Total Delete: Remove student, reference photo, and all attendance logs from class">
+                            <i class="fa-solid fa-user-xmark"></i> REMOVE STUDENT
                         </button>
                     </div>
                 `;
             }).join('');
 
-            // Attach Remove Event Handlers
-            container.querySelectorAll('.btnRemoveRosterStudent').forEach(btn => {
+            // Attach Remove Student Event Handler (Total Delete)
+            container.querySelectorAll('.btnTotalRemoveStudent').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const name = e.currentTarget.getAttribute('data-name');
                     if (!name) return;
 
-                    if (!confirm(`Remove "${name}" from class roster template?`)) return;
+                    if (!confirm(`Warning: This will COMPLETELY DELETE student "${name}", remove their reference face photo, and wipe all attendance history from this class. Continue?`)) {
+                        return;
+                    }
 
                     try {
-                        const delRes = await fetch('/api/roster/remove', {
+                        const delRes = await fetch('/api/delete_student', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ name })
@@ -1063,10 +1078,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             fetchRosterData();
                             fetchAttendanceData();
                         } else {
-                            showToast(delData.message || 'Failed to remove student from roster', 'danger');
+                            showToast(delData.message || 'Failed to remove student', 'danger');
                         }
                     } catch (err) {
-                        showToast('Error removing student from roster', 'danger');
+                        showToast('Error connecting to server to remove student', 'danger');
                     }
                 });
             });
@@ -1205,12 +1220,14 @@ document.addEventListener('DOMContentLoaded', () => {
         registerFaceForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('registerName').value.trim();
+            const rollNo = document.getElementById('registerRollNo') ? document.getElementById('registerRollNo').value.trim() : '';
             const fileInput = document.getElementById('faceImage');
 
             if (!name || fileInput.files.length === 0) return;
 
             const formData = new FormData();
             formData.append('name', name);
+            formData.append('roll_no', rollNo);
             formData.append('file', fileInput.files[0]);
 
             try {

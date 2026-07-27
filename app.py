@@ -927,40 +927,79 @@ def manual_entry():
 
 @app.route('/api/register_face', methods=['POST'])
 def register_face():
-    """API to upload new face photo into known_faces directory & DB."""
+    """API to upload new face photo into known_faces directory & DB with roll number linking."""
     if 'file' not in request.files or 'name' not in request.form:
         return jsonify({"success": False, "message": "File and Name required"}), 400
 
     file = request.files['file']
     name = request.form['name'].strip()
+    roll_no = request.form.get('roll_no', '').strip() or "-"
 
     if file.filename == '':
         return jsonify({"success": False, "message": "No file selected"}), 400
 
-    filename_safe = name.replace(' ', '_') + os.path.splitext(file.filename)[1].lower()
+    valid_extensions = ('.jpg', '.jpeg', '.png')
+    name_clean = name.replace(' ', '_')
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in valid_extensions:
+        ext = '.jpg'
+
+    # Remove any existing photos for this student first to prevent duplicate extension files (e.g. .jpeg and .png)
+    if os.path.exists(KNOWN_FACES_DIR):
+        for existing in os.listdir(KNOWN_FACES_DIR):
+            ext_check = os.path.splitext(existing)[1].lower()
+            if ext_check in valid_extensions:
+                base_check = os.path.splitext(existing)[0].replace('_', ' ').title()
+                if base_check.lower() == name.lower():
+                    try:
+                        os.remove(os.path.join(KNOWN_FACES_DIR, existing))
+                        print(f"[INFO] Replaced existing face photo: {existing}")
+                    except Exception:
+                        pass
+
+    filename_safe = f"{name_clean}{ext}"
     save_path = os.path.join(KNOWN_FACES_DIR, filename_safe)
-    
     file.save(save_path)
     print(f"[INFO] New face registered: {save_path}")
-    
+
+    # Sync into class roster
+    roster = load_class_roster()
+    found = False
+    for item in roster:
+        if isinstance(item, dict) and item.get('name', '').lower() == name.lower():
+            item['photo'] = filename_safe
+            if roll_no and roll_no != "-":
+                item['roll_no'] = roll_no
+            found = True
+            break
+
+    if not found:
+        roster.append({
+            "name": name,
+            "roll_no": roll_no,
+            "photo": filename_safe,
+            "added_at": get_current_now().strftime("%Y-%m-%d %I:%M %p")
+        })
+    save_class_roster(roster)
+
     if USE_MONGO and db is not None:
         try:
             db.registered_faces.update_one(
                 {"name": name},
-                {"$set": {"name": name, "filename": filename_safe, "registered_at": get_current_now()}},
+                {"$set": {"name": name, "roll_no": roll_no, "filename": filename_safe, "registered_at": get_current_now()}},
                 upsert=True
             )
         except Exception as err:
             print(f"[WARNING] MongoDB face register error: {err}")
 
     load_known_faces()
-    log_activity(f"Registered new face photo for {name}.", "success")
-    return jsonify({"success": True, "message": f"Successfully registered face for {name}!"})
+    log_activity(f"Registered new face photo & details for {name} (Roll No: {roll_no}).", "success")
+    return jsonify({"success": True, "message": f"Successfully registered {name} (Roll No: {roll_no})!"})
 
 
 @app.route('/api/delete_student', methods=['POST'])
 def delete_student():
-    """API to delete registered student, remove their face photo, and purge records."""
+    """API to completely delete student across face photos, class roster, attendance CSV logs, and DB."""
     data = request.get_json() or {}
     name = str(data.get('name', '')).strip()
 
@@ -970,7 +1009,7 @@ def delete_student():
     deleted_photo = False
     valid_extensions = ('.jpg', '.jpeg', '.png')
     
-    # 1. Delete face photo from known_faces directory
+    # 1. Delete ALL face photo extensions for this student from known_faces directory
     if os.path.exists(KNOWN_FACES_DIR):
         for filename in os.listdir(KNOWN_FACES_DIR):
             if filename.lower().endswith(valid_extensions):
@@ -980,11 +1019,11 @@ def delete_student():
                     try:
                         os.remove(fpath)
                         deleted_photo = True
-                        print(f"[INFO] Deleted face photo: {fpath}")
+                        print(f"[INFO] Deleted reference face photo: {fpath}")
                     except Exception as err:
                         print(f"[ERROR] Deleting face photo {fpath}: {err}")
 
-    # 2. Delete student records from class CSV files
+    # 2. Total delete student records from all class CSV attendance files
     target_csvs = ["attendance_CLASS1.csv", "attendance_ECE2.csv", "attendance_ECE3.csv", "attendance.csv"]
     for csv_file in target_csvs:
         if os.path.exists(csv_file) and os.path.getsize(csv_file) > 0:
@@ -995,10 +1034,11 @@ def delete_student():
                     df = df[df['Name'].str.lower() != name.lower()]
                     if len(df) < initial_len:
                         df.to_csv(csv_file, index=False)
+                        print(f"[INFO] Purged student records from {csv_file}")
             except Exception as e:
                 print(f"[ERROR] Purging student from {csv_file}: {e}")
 
-    # 3. Delete from MongoDB if active
+    # 3. Delete from MongoDB collections if active
     if USE_MONGO and db is not None:
         try:
             db.registered_faces.delete_many({"name": {"$regex": f"^{name}$", "$options": "i"}})
@@ -1007,17 +1047,20 @@ def delete_student():
         except Exception as err:
             print(f"[WARNING] MongoDB delete student error: {err}")
 
-    # 4. Remove from class roster file
+    # 4. Total remove from class roster JSON file
     current_roster = load_class_roster()
-    new_roster = [s for s in current_roster if (s.get('name', '') if isinstance(s, dict) else str(s)).lower() != name.lower()]
+    new_roster = [
+        s for s in current_roster
+        if (s.get('name', '') if isinstance(s, dict) else str(s)).lower() != name.lower()
+    ]
     if len(new_roster) != len(current_roster):
         save_class_roster(new_roster)
 
-    # 5. Reload in-memory face encodings
+    # 5. Reload in-memory face encodings immediately
     load_known_faces()
-    log_activity(f"Teacher deleted student '{name}' and purged face registration.", "warning")
+    log_activity(f"Teacher totally deleted student '{name}' and purged all reference data & logs.", "warning")
 
-    return jsonify({"success": True, "message": f"Successfully deleted student '{name}'!"})
+    return jsonify({"success": True, "message": f"Successfully removed '{name}' from class & purged all data!"})
 
 
 # --- Class Student Roster & Template APIs ---
