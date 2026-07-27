@@ -580,6 +580,30 @@
         </div>
     </div>
 
+    <!-- Modal 5: Stat Category Detailed Student List Modal -->
+    <div class="modal-backdrop" id="statDetailModal">
+        <div class="modal-card" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="statDetailModalTitle"><i class="fa-solid fa-users text-primary"></i> Category Student List</h3>
+                <button class="close-btn" id="closeStatDetailModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                        <input type="text" id="statDetailSearchInput" placeholder="Type student name to filter list...">
+                    </div>
+                </div>
+                <div id="statDetailStudentListContainer" style="max-height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px;">
+                    <span class="text-muted small">Loading student list...</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelStatDetailBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toastContainer"></div>
 

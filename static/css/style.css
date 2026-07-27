@@ -265,11 +265,15 @@ body {
     gap: 18px;
     box-shadow: var(--shadow-main);
     transition: var(--transition);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
 }
 
 .stat-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-4px) scale(1.02);
+    border-color: var(--primary);
+    box-shadow: 0 10px 28px rgba(99, 102, 241, 0.35);
 }
 
 .stat-icon {

@@ -1298,6 +1298,146 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- 10. Stat Category Click Controller ---
+    const statDetailModal = document.getElementById('statDetailModal');
+    const closeStatDetailModalBtn = document.getElementById('closeStatDetailModalBtn');
+    const cancelStatDetailBtn = document.getElementById('cancelStatDetailBtn');
+    const statDetailSearchInput = document.getElementById('statDetailSearchInput');
+    let currentCategoryKey = '';
+
+    function openCategoryModal(categoryKey) {
+        currentCategoryKey = categoryKey;
+        if (statDetailSearchInput) statDetailSearchInput.value = '';
+        renderStatCategoryList(categoryKey);
+        toggleModal(statDetailModal, true);
+    }
+
+    function renderStatCategoryList(categoryKey) {
+        const container = document.getElementById('statDetailStudentListContainer');
+        const titleEl = document.getElementById('statDetailModalTitle');
+        if (!container) return;
+
+        const searchText = statDetailSearchInput ? statDetailSearchInput.value.toLowerCase().trim() : '';
+
+        let listItems = [];
+        let modalTitle = '';
+
+        if (categoryKey === 'total_present') {
+            modalTitle = `<i class="fa-solid fa-users text-primary"></i> Total Present Today (${cachedAttendance.length} Students)`;
+            listItems = cachedAttendance.map(item => ({
+                name: item.Name,
+                status: item.Status || 'On Time',
+                time: item.In_Time || item.Time || '-',
+                remarks: item.Remarks || '-'
+            }));
+        } else if (categoryKey === 'on_time') {
+            const matches = cachedAttendance.filter(item => (item.Status || '').trim() === 'On Time');
+            modalTitle = `<i class="fa-solid fa-circle-check text-success"></i> On Time Students Today (${matches.length} Students)`;
+            listItems = matches.map(item => ({
+                name: item.Name,
+                status: 'On Time',
+                time: item.In_Time || item.Time || '-',
+                remarks: item.Remarks || '-'
+            }));
+        } else if (categoryKey === 'late') {
+            const matches = cachedAttendance.filter(item => (item.Status || '').trim() === 'Late');
+            modalTitle = `<i class="fa-solid fa-triangle-exclamation text-danger"></i> Late Arrival Students Today (${matches.length} Students)`;
+            listItems = matches.map(item => ({
+                name: item.Name,
+                status: 'Late',
+                time: item.In_Time || item.Time || '-',
+                remarks: item.Remarks || '-'
+            }));
+        } else if (categoryKey === 'od') {
+            const matches = cachedAttendance.filter(item => {
+                const s = (item.Status || '').toUpperCase();
+                return s.includes('OD') || s.includes('DUTY') || s.includes('PERMISSION');
+            });
+            modalTitle = `<i class="fa-solid fa-id-badge text-warning"></i> OD & Permission Students Today (${matches.length} Students)`;
+            listItems = matches.map(item => ({
+                name: item.Name,
+                status: item.Status,
+                time: item.In_Time || item.Time || '-',
+                remarks: item.Remarks || '-'
+            }));
+        } else if (categoryKey === 'absent') {
+            const loggedNamesLower = new Set(cachedAttendance.map(item => (item.Name || '').toLowerCase()));
+            const absentStudents = cachedRegisteredStudents.filter(name => !loggedNamesLower.has(name.toLowerCase()));
+            
+            modalTitle = `<i class="fa-solid fa-user-xmark text-danger"></i> Total Absent Students Today (${absentStudents.length} Students)`;
+            listItems = absentStudents.map(name => ({
+                name: name,
+                status: 'Absent',
+                time: 'Not Scanned Today',
+                remarks: 'No attendance logged'
+            }));
+        } else if (categoryKey === 'enrolled') {
+            modalTitle = `<i class="fa-solid fa-graduation-cap text-info"></i> All Enrolled Class Roster (${cachedRegisteredStudents.length} Students)`;
+            listItems = cachedRegisteredStudents.map(name => {
+                const isPresent = cachedAttendance.some(item => (item.Name || '').toLowerCase() === name.toLowerCase());
+                return {
+                    name: name,
+                    status: isPresent ? 'Present Today' : 'Absent Today',
+                    time: isPresent ? 'Logged' : 'Not Logged',
+                    remarks: 'Enrolled Class Roster'
+                };
+            }));
+        }
+
+        if (titleEl) titleEl.innerHTML = modalTitle;
+
+        if (searchText) {
+            listItems = listItems.filter(item => 
+                item.name.toLowerCase().includes(searchText) || 
+                item.status.toLowerCase().includes(searchText) ||
+                item.remarks.toLowerCase().includes(searchText)
+            );
+        }
+
+        if (listItems.length === 0) {
+            container.innerHTML = `<div class="empty-state" style="padding: 16px;"><p>No matching students found in this category.</p></div>`;
+            return;
+        }
+
+        container.innerHTML = listItems.map(item => {
+            let statusBadge = `<span class="badge badge-ontime">${escapeHtml(item.status)}</span>`;
+            if (item.status === 'Late') statusBadge = `<span class="badge badge-late">Late</span>`;
+            else if (item.status.includes('OD') || item.status.includes('Duty')) statusBadge = `<span class="badge badge-warning">OD</span>`;
+            else if (item.status === 'Absent' || item.status === 'Absent Today') statusBadge = `<span class="badge badge-danger">Absent</span>`;
+
+            return `
+                <div class="student-detail-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); border-radius: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                        <span style="font-weight: 700; color: var(--text-main); font-size: 14px;">
+                            <i class="fa-solid fa-user text-primary" style="margin-right: 6px;"></i> ${escapeHtml(item.name)}
+                        </span>
+                        <span style="font-size: 12px; color: var(--text-muted);">
+                            <i class="fa-regular fa-clock"></i> Time: <strong>${escapeHtml(item.time)}</strong> • Remarks: ${escapeHtml(item.remarks)}
+                        </span>
+                    </div>
+                    <div>
+                        ${statusBadge}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    if (statDetailSearchInput) {
+        statDetailSearchInput.addEventListener('input', () => renderStatCategoryList(currentCategoryKey));
+    }
+
+    if (closeStatDetailModalBtn) closeStatDetailModalBtn.addEventListener('click', () => toggleModal(statDetailModal, false));
+    if (cancelStatDetailBtn) cancelStatDetailBtn.addEventListener('click', () => toggleModal(statDetailModal, false));
+
+    // Attach Click Handlers to all Stat Cards
+    document.querySelector('.card-total')?.addEventListener('click', () => openCategoryModal('total_present'));
+    document.querySelector('.card-ontime')?.addEventListener('click', () => openCategoryModal('on_time'));
+    document.querySelector('.card-late')?.addEventListener('click', () => openCategoryModal('late'));
+    document.querySelector('.card-od')?.addEventListener('click', () => openCategoryModal('od'));
+    document.querySelector('.card-absent')?.addEventListener('click', () => openCategoryModal('absent'));
+    document.querySelector('.card-enrolled')?.addEventListener('click', () => openCategoryModal('enrolled'));
+
     // Check Initial Session
     checkAuthSession();
     setInterval(fetchAttendanceData, 2500);
