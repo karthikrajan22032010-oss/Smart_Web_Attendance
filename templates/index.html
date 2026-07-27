@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Face Recognition & Classroom Attendance System</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js 3D WebGL Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- 3D Background Particles Mesh -->
+    <div class="bg-3d-particles" id="particlesBg"></div>
+
+    <!-- 1. CLASS LOGIN SECTION (3D GLASSMORPHISM UI) -->
+    <div class="login-container" id="loginSection">
+        <div class="login-card-3d tilt-card">
+            <div class="login-header">
+                <div class="logo-3d-wrapper">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Smart Attendance 3D Logo" class="logo-3d-img">
+                </div>
+                <h2>Classroom Portal Login</h2>
+                <p>Smart Face Recognition & Classroom Attendance System</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="loginId"><i class="fa-solid fa-user-shield"></i> Class Login ID</label>
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-id-badge input-icon"></i>
+                        <input type="text" id="loginId" placeholder="Enter Class Login ID" required autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPass"><i class="fa-solid fa-lock"></i> Password</label>
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-key input-icon"></i>
+                        <input type="password" id="loginPass" placeholder="Enter class password" required autocomplete="current-password">
+                        <button type="button" class="toggle-pass-btn" id="btnTogglePass">
+                            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="login-error-msg" id="loginErrorMsg"></div>
+
+                <button type="submit" class="btn btn-login-3d" id="btnLoginSubmit">
+                    <span>Login to Classroom Dashboard</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <div class="developer-credit-login">
+                    <i class="fa-solid fa-code text-primary"></i> Designed & Developed by <strong>MAYANDI KARTHIK RAJAN</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MAIN CLASSROOM DASHBOARD SECTION -->
+    <div class="app-container" id="dashboardSection" style="display: none;">
+        <!-- Top Navigation / Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-logo-container">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="3D Logo" class="brand-logo-3d">
+                </div>
+                <div class="brand-text">
+                    <h1>SmartAttendance<span>Portal</span></h1>
+                    <p>Real-Time Face Match & Classroom Surveillance</p>
+                </div>
+                <div class="class-active-badge">
+                    <i class="fa-solid fa-graduation-cap"></i> <span id="activeClassName">ECE 2nd Year</span>
+                </div>
+            </div>
+
+            <div class="header-right-group">
+                <div class="schedule-badges">
+                    <span class="badge-item" title="Morning Entrance Cutoff"><i class="fa-solid fa-right-to-bracket"></i> In: <strong>09:10 AM</strong></span>
+                    <span class="badge-item" title="Morning Break Window"><i class="fa-solid fa-mug-hot"></i> Morn: <strong>10:50 AM</strong></span>
+                    <span class="badge-item" title="Lunch Break Window"><i class="fa-solid fa-utensils"></i> Lunch: <strong>12:50 PM</strong></span>
+                    <span class="badge-item" title="Evening Break Window"><i class="fa-solid fa-cookie-bite"></i> Eve: <strong>03:50 PM</strong></span>
+                    <span class="badge-item" title="Shift Departure Time"><i class="fa-solid fa-right-from-bracket"></i> Out: <strong>05:10 PM</strong></span>
+                    <span class="badge-item db-badge"><i class="fa-solid fa-database text-success"></i> <strong id="mongoStatus">CSV Local</strong></span>
+                </div>
+                <div class="header-action-row">
+                    <div class="theme-picker-group" style="display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-palette text-warning" style="font-size: 14px;"></i>
+                        <select id="themeSelector" class="form-select-sm" style="background: rgba(15, 23, 42, 0.85); color: var(--text-main); border: 1px solid var(--card-border); padding: 5px 10px; border-radius: 20px; font-size: 12px; cursor: pointer; outline: none;" title="Change Dashboard Color Theme">
+                            <option value="sapphire">🌌 Sapphire Blue</option>
+                            <option value="gold">⚡ Cyber Neon Gold</option>
+                            <option value="emerald">🌲 Emerald Mint</option>
+                            <option value="amethyst">🔮 Deep Amethyst</option>
+                            <option value="titanium">💎 Titanium Cyan</option>
+                        </select>
+                    </div>
+                    <div class="live-date-clock" id="liveDateClock" title="Click to adjust time">
+                        <span class="date-str" id="liveDateStr">Sun, Jul 26, 2026</span>
+                        <span class="clock-divider">•</span>
+                        <span class="clock-str" id="liveClockStr">12:14:00 AM</span>
+                    </div>
+                    <button class="btn btn-outline btn-xs btn-sync-time" id="btnOpenSyncTimeModal" title="Sync or Adjust Clock Time">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Sync Time
+                    </button>
+                    <button class="btn btn-outline btn-sm btn-logout" id="btnLogout" title="Logout Class Session">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 3 Position Navigation Tabs -->
+        <nav class="nav-positions">
+            <button class="nav-tab active" id="tabBtnDaily" data-tab="posDaily">
+                <i class="fa-solid fa-calendar-day"></i> Position 1: Daily Attendance
+            </button>
+            <button class="nav-tab" id="tabBtnMonthly" data-tab="posMonthly">
+                <i class="fa-solid fa-calendar-days"></i> Position 2: Monthly Attendance
+            </button>
+            <button class="nav-tab" id="tabBtnSurveillance" data-tab="posSurveillance">
+                <i class="fa-solid fa-video"></i> Position 3: Live Class & 24h Videos
+            </button>
+        </nav>
+
+        <!-- POSITION 1: DAILY ATTENDANCE & LIVE SCANNER -->
+        <div class="tab-content active" id="posDaily">
+            <!-- Stats Counter Cards -->
+            <section class="stats-grid">
+                <div class="stat-card card-total tilt-card">
+                    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                    <div class="stat-details">
+                        <span class="stat-title">Total Present Today</span>
+                        <h2 class="stat-number" id="statTotal">0</h2>
+                    </div>
+                </div>
+                <div class="stat-card card-ontime tilt-card">
+                    <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="stat-details">
+                        <span class="stat-title">On Time</span>
+                        <h2 class="stat-number" id="statOnTime">0</h2>
+                    </div>
+                </div>
+                <div class="stat-card card-late tilt-card">
+                    <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="stat-details">
+                        <span class="stat-title">Late Arrival</span>
+                        <h2 class="stat-number" id="statLate">0</h2>
+                    </div>
+                </div>
+                <div class="stat-card card-od tilt-card">
+                    <div class="stat-icon"><i class="fa-solid fa-id-badge"></i></div>
+                    <div class="stat-details">
+                        <span class="stat-title">OD (On Duty)</span>
+                        <h2 class="stat-number" id="statOD">0</h2>
+                    </div>
+                </div>
+                <div class="stat-card card-absent tilt-card">
+                    <div class="stat-icon"><i class="fa-solid fa-user-xmark"></i></div>
+                    <div class="stat-details">
+                        <span class="stat-title">Total Absent Today</span>
+                        <h2 class="stat-number" id="statAbsent">0</h2>
+                    </div>
+                </div>
+                <div class="stat-card card-enrolled tilt-card">
+                    <div class="stat-icon"><i class="fa-solid fa-id-card"></i></div>
+                    <div class="stat-details">
+                        <span class="stat-title">Enrolled Students</span>
+                        <h2 class="stat-number" id="statEnrolled">0</h2>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Daily Grid -->
+            <main class="main-content">
+                <!-- Left Side: Live Video Stream Feed -->
+                <div class="card video-card tilt-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-camera"></i>
+                            <span>Real-Time Face Scanner</span>
+                        </div>
+                        <div class="live-indicator">
+                            <span class="pulse-dot"></span> LIVE SCAN
+                        </div>
+                    </div>
+
+                    <div class="video-container" id="videoContainer">
+                        <img class="video-feed-img" id="serverVideoImg" src="{{ url_for('video_feed') }}" alt="Live Camera Feed Stream">
+                        <video id="clientVideo" autoplay playsinline muted style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></video>
+                        <canvas id="clientCanvas" style="display: none;"></canvas>
+                        <div class="video-overlay">
+                            <div class="scan-line"></div>
+                            <div class="laser-sweep-beam"></div>
+                            <div class="hud-ring 3d-hud-compass"></div>
+                            <div class="hud-center-crosshair"></div>
+                            <div class="corner corner-tl"></div>
+                            <div class="corner corner-tr"></div>
+                            <div class="corner corner-bl"></div>
+                            <div class="corner corner-br"></div>
+                            <div class="hud-telemetry-badge hud-top-left"><i class="fa-solid fa-microchip"></i> 60 FPS • AI SCAN</div>
+                            <div class="hud-telemetry-badge hud-bottom-right"><i class="fa-solid fa-expand"></i> 3D PARALLAX DEPTH</div>
+                        </div>
+                    </div>
+
+                    <div class="video-footer">
+                        <span class="status-msg" id="camStatusMsg"><i class="fa-solid fa-shield-halved"></i> OpenCV Face Match Active</span>
+                        <div class="cam-action-btns" style="display: flex; gap: 8px;">
+                            <button class="btn btn-outline btn-xs" id="btnToggleCamSource" title="Switch between Device Camera and Server Camera">
+                                <i class="fa-solid fa-mobile-screen"></i> Use Device Camera
+                            </button>
+                            <button class="btn btn-outline btn-xs" id="btnFlipCam" style="display: none;" title="Flip Front / Back Camera">
+                                <i class="fa-solid fa-arrows-rotate"></i> Flip
+                            </button>
+                            <button class="btn btn-secondary btn-sm btnRefreshFeed">
+                                <i class="fa-solid fa-rotate-right"></i> Reload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Today's Live Attendance Table -->
+                <div class="card table-card tilt-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-clipboard-user"></i>
+                            <span>Today's Attendance Log</span>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-primary btn-sm" id="openManualModalBtn">
+                                <i class="fa-solid fa-user-pen"></i> Teacher Manual & OD
+                            </button>
+                            <button class="btn btn-outline btn-sm" id="openRegisterModalBtn">
+                                <i class="fa-solid fa-camera"></i> Register Face
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search & Filters -->
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="searchInput" placeholder="Search today's records...">
+                        </div>
+                        <div class="toolbar-btns">
+                            <button class="btn btn-success btn-sm btnExportExcel" title="Export Monthly Excel Report (.xlsx)">
+                                <i class="fa-solid fa-file-excel"></i> Monthly Excel
+                            </button>
+                            <button class="btn btn-icon btnExportCSV" title="Export CSV Data">
+                                <i class="fa-solid fa-file-csv"></i>
+                            </button>
+                            <button class="btn btn-icon text-danger" id="btnClearLog" title="Clear Today's Log">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table Container -->
+                    <div class="table-responsive">
+                        <table class="attendance-table" id="attendanceTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Monthly %</th>
+                                    <th>Date</th>
+                                    <th>Time In</th>
+                                    <th>Time Out</th>
+                                    <th>Status</th>
+                                    <th>Morn Refresh</th>
+                                    <th>Lunch</th>
+                                    <th>Eve Refresh</th>
+                                    <th>Teacher Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <tr class="empty-row">
+                                    <td colspan="11">
+                                        <div class="empty-state">
+                                            <i class="fa-solid fa-spinner fa-spin"></i>
+                                            <p>Scanning for faces...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- POSITION 2: MONTHLY ATTENDANCE MATRIX -->
+        <div class="tab-content" id="posMonthly">
+            <div class="card tilt-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        <span>Monthly Attendance Overview & Master Matrix</span>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-success btn-sm btnExportExcel">
+                            <i class="fa-solid fa-file-excel"></i> Download Excel (.xlsx) Report
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-toolbar">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="monthlySearchInput" placeholder="Filter monthly records by employee name...">
+                    </div>
+                    <div class="toolbar-btns" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <div class="month-filter-group" style="display: flex; align-items: center; gap: 8px;">
+                            <label for="excelMonthSelect" class="small text-muted"><i class="fa-solid fa-calendar-check text-info"></i> Accurate Month:</label>
+                            <select id="excelMonthSelect" class="form-select-sm" style="background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 8px; font-size: 13px;">
+                                <option value="current">Jul 2026 (Current Month)</option>
+                                <option value="all">All Months Records</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-success btn-sm btnExportExcel" id="btnExportAccurateExcel" title="Download Excel report for selected month">
+                            <i class="fa-solid fa-file-excel"></i> Export Month End Excel (.xlsx)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="max-height: 550px;">
+                    <table class="attendance-table" id="monthlyTable">
+                        <thead id="monthlyTableHead">
+                            <tr>
+                                <th>Student / Person</th>
+                                <th>Attendance %</th>
+                                <th>Total Present</th>
+                                <th>On Time</th>
+                                <th>Late</th>
+                                <th>OD</th>
+                                <th>Date Records</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlyTableBody">
+                            <tr class="empty-row">
+                                <td colspan="7">
+                                    <div class="empty-state">
+                                        <i class="fa-solid fa-spinner fa-spin"></i>
+                                        <p>Loading monthly attendance data...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- POSITION 3: LIVE CLASS SURVEILLANCE & 24H VIDEOS -->
+        <div class="tab-content" id="posSurveillance">
+            <div class="surveillance-grid">
+                <!-- Left Side: Live Class Stream & Activity Feed -->
+                <div class="card tilt-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-video"></i>
+                            <span>Live Class Monitoring Stream</span>
+                        </div>
+                        <div class="live-indicator">
+                            <span class="pulse-dot"></span> LIVE CLASSROOM
+                        </div>
+                    </div>
+
+                    <div class="video-container" style="max-height: 380px;">
+                        <img class="video-feed-img" src="{{ url_for('video_feed') }}" alt="Live Classroom Stream">
+                    </div>
+
+                    <div class="activity-section">
+                        <h4 class="section-title"><i class="fa-solid fa-user-clock"></i> Classroom Activity Stream</h4>
+                        <div class="activity-list" id="activityList">
+                            <div class="activity-item">
+                                <span class="time-badge">Now</span>
+                                <span class="activity-msg">Classroom surveillance active. Monitoring entry & actions.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: 24h Auto-Deleted Video Recordings -->
+                <div class="card tilt-card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-film"></i>
+                            <span>24-Hour Saved Video Clips</span>
+                        </div>
+                        <span class="badge-purge"><i class="fa-solid fa-clock-rotate-left"></i> Auto-Deleted in 24h</span>
+                    </div>
+
+                    <p class="help-text-banner">
+                        <i class="fa-solid fa-circle-info text-info"></i> All class footage is automatically saved and purged after 24 hours to optimize storage space.
+                    </p>
+
+                    <div class="recordings-list" id="recordingsList">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-film"></i>
+                            <p>No video clips recorded yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Developer Credit Footer -->
+        <footer class="app-footer">
+            <p><i class="fa-solid fa-code text-primary"></i> Designed & Developed by <strong>MAYANDI KARTHIK RAJAN</strong></p>
+        </footer>
+    </div>
+
+    <!-- Modal 1: Teacher Manual Entry & OD Approval -->
+    <div class="modal-backdrop" id="manualModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-pen"></i> Teacher Manual Entry & OD Approval</h3>
+                <button class="close-btn" id="closeManualModalBtn">&times;</button>
+            </div>
+            <form id="manualEntryForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <div class="checkbox-header">
+                            <label><i class="fa-solid fa-list-check"></i> Select Enrolled Student(s) (Checkboxes):</label>
+                            <div class="checkbox-toolbar">
+                                <button type="button" class="btn btn-outline btn-xs" id="btnSelectAllNames">
+                                    <i class="fa-solid fa-check-double"></i> Select All
+                                </button>
+                                <button type="button" class="btn btn-outline btn-xs" id="btnUnselectAllNames">
+                                    <i class="fa-solid fa-xmark"></i> Unselect All
+                                </button>
+                            </div>
+                        </div>
+                        <div class="student-checkbox-list" id="studentCheckboxList">
+                            <span class="text-muted small">Loading student name list...</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="manualName">Or Type Other / Custom Name:</label>
+                        <input type="text" id="manualName" placeholder="e.g. Guest / Unregistered Student">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="manualTime">Time In</label>
+                            <input type="time" id="manualTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="manualStatus">Attendance Status / OD</label>
+                            <select id="manualStatus">
+                                <option value="OD (On Duty)">OD (On Duty / Official Duty)</option>
+                                <option value="On Time">On Time (Late Approval)</option>
+                                <option value="Late">Late</option>
+                                <option value="Permission">Permission / Half Day</option>
+                                <option value="Present">Present</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="manualRemarks">OD Reason / Teacher Remarks</label>
+                        <input type="text" id="manualRemarks" placeholder="e.g. Sports Event OD #104, Medical Slip, Late Bus Approval...">
+                        <small class="help-text">Add reason or OD approval code for record-keeping.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelManualBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Submit & Approve OD</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Register New Face -->
+    <div class="modal-backdrop" id="registerModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-camera"></i> Register New Face Photo</h3>
+                <button class="close-btn" id="closeRegisterModalBtn">&times;</button>
+            </div>
+            <form id="registerFaceForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="registerName">Person's Full Name</label>
+                        <input type="text" id="registerName" placeholder="e.g. John Smith" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="faceImage">Face Photo (JPG/PNG)</label>
+                        <input type="file" id="faceImage" accept="image/*" required>
+                        <small class="help-text">Select a clear frontal photo of the person.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelRegisterBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-upload"></i> Upload & Train</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Adjust / Sync System Time -->
+    <div class="modal-backdrop" id="syncTimeModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-clock-rotate-left"></i> Adjust / Sync System Time</h3>
+                <button class="close-btn" id="closeSyncTimeModalBtn">&times;</button>
+            </div>
+            <form id="syncTimeForm">
+                <div class="modal-body">
+                    <div class="quick-class-selection" style="margin-bottom: 12px;">
+                        <span class="quick-title"><i class="fa-solid fa-bolt text-warning"></i> Quick Time Presets:</span>
+                        <div class="class-chips">
+                            <button type="button" class="chip-btn" id="btnPreset405PM">
+                                <i class="fa-solid fa-clock text-success"></i> Sync to 04:05 PM (Current Local Time)
+                            </button>
+                            <button type="button" class="chip-btn" id="btnPresetResetPC">
+                                <i class="fa-solid fa-rotate-left text-info"></i> Reset to PC Default Clock
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="customTimeInput">Or Enter Exact Custom Time:</label>
+                        <input type="text" id="customTimeInput" placeholder="e.g. 04:05 PM or 16:05">
+                        <small class="help-text">Type time in 12-hour (04:05 PM) or 24-hour format (16:05).</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelSyncTimeBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Apply Time Sync</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Client JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
