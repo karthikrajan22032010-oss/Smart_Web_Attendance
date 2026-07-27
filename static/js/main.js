@@ -243,6 +243,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Quick Class Chips
+    const btnSelectClass0 = document.getElementById('btnSelectClass0');
+    if (btnSelectClass0) {
+        btnSelectClass0.addEventListener('click', () => {
+            loginIdInput.value = 'CLASS 1';
+            loginPassInput.value = '123456789';
+            if (loginErrorMsg) loginErrorMsg.style.display = 'none';
+        });
+    }
+
     if (btnSelectClass1) {
         btnSelectClass1.addEventListener('click', () => {
             loginIdInput.value = 'ECE 2YEAR@LAPC';
@@ -287,8 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
             loginErrorMsg.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${escapeHtml(msg)}`;
             loginErrorMsg.style.display = 'block';
         }
-
-        startLoginCooldown(60);
     }
 
     function startLoginCooldown(seconds = 60) {

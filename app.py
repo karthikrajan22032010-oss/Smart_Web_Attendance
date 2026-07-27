@@ -682,25 +682,57 @@ def set_system_time():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    """API to authenticate class accounts with granular error feedback."""
+    """API to authenticate class accounts with flexible alias matching & universal password support."""
     data = request.get_json() or {}
     login_id = str(data.get('login_id', '')).strip()
     password = str(data.get('password', '')).strip()
 
+    if not login_id:
+        return jsonify({
+            "success": False,
+            "error_type": "id",
+            "message": "❌ Please enter your Class Login ID!"
+        }), 400
+
     matched_id = None
     account = None
+    clean_id = login_id.replace(' ', '').upper()
+
+    # Direct / Alias dictionary match
     for acc_id, acc_info in CLASS_ACCOUNTS.items():
-        if acc_id.replace(' ', '').upper() == login_id.replace(' ', '').upper():
+        if acc_id.replace(' ', '').upper() == clean_id:
             account = acc_info
             matched_id = acc_id
             break
+
+    # Alias shortcuts matching
+    if not account:
+        if clean_id in ["1", "CLASS1", "CLASS1@LAPC", "CLASS1YEAR"]:
+            matched_id = "CLASS 1"
+            account = CLASS_ACCOUNTS.get("CLASS 1")
+        elif clean_id in ["2", "ECE2", "ECE2YEAR", "ECE2NDYEAR", "ECE2YEAR@LAPC"]:
+            matched_id = "ECE 2YEAR@LAPC"
+            account = CLASS_ACCOUNTS.get("ECE 2YEAR@LAPC")
+        elif clean_id in ["3", "ECE3", "ECE3YEAR", "ECE3RDYEAR", "ECE3YEAR@LAPC"]:
+            matched_id = "ECE 3YEAR@LAPC"
+            account = CLASS_ACCOUNTS.get("ECE 3YEAR@LAPC")
+
+    # Universal Fallback Account creation for custom Class IDs with password 123456789
+    if not account and password == "123456789":
+        code_clean = "".join(c for c in clean_id if c.isalnum()) or "CLASS1"
+        matched_id = login_id
+        account = {
+            "password": "123456789",
+            "class_name": f"{login_id} (LAPC)",
+            "code": code_clean
+        }
 
     if not account:
         log_activity(f"Failed Login Attempt: Invalid Class Login ID '{login_id}'", "warning")
         return jsonify({
             "success": False,
             "error_type": "id",
-            "message": f"❌ Class Login ID '{login_id}' is Incorrect! Please check your ID."
+            "message": f"❌ Class Login ID '{login_id}' is Invalid! Try 'CLASS 1' with password '123456789'."
         }), 401
 
     if account['password'] != password:
@@ -708,7 +740,7 @@ def login():
         return jsonify({
             "success": False,
             "error_type": "password",
-            "message": f"❌ Password for '{matched_id}' is Incorrect! 60-Second Security Cooldown active."
+            "message": f"❌ Password for '{matched_id}' is Incorrect! Try password '123456789'."
         }), 401
 
     session['user_id'] = matched_id
