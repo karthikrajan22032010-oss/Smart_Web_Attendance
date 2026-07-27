@@ -1391,7 +1391,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     time: isPresent ? 'Logged' : 'Not Logged',
                     remarks: 'Enrolled Class Roster'
                 };
-            }));
+            });
         }
 
         if (titleEl) titleEl.innerHTML = modalTitle;
