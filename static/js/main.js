@@ -1001,16 +1001,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (openRegisterModalBtn) {
-        openRegisterModalBtn.addEventListener('click', () => {
-            renderRegisteredStudentsManageList();
-            toggleModal(registerModal, true);
-        });
-    }
     if (closeManualModalBtn) closeManualModalBtn.addEventListener('click', () => toggleModal(manualModal, false));
     if (cancelManualBtn) cancelManualBtn.addEventListener('click', () => toggleModal(manualModal, false));
-    if (closeRegisterModalBtn) closeRegisterModalBtn.addEventListener('click', () => toggleModal(registerModal, false));
-    if (cancelRegisterBtn) cancelRegisterBtn.addEventListener('click', () => toggleModal(registerModal, false));
 
     // --- 9. Class Roster & Student Template Controller ---
     const rosterModal = document.getElementById('rosterModal');
@@ -1230,8 +1222,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await res.json();
                 if (res.ok && result.success) {
                     showToast(result.message || 'Face registered successfully!', 'success');
-                    toggleModal(registerModal, false);
                     registerFaceForm.reset();
+                    fetchRosterData();
                     fetchAttendanceData();
                 } else {
                     showToast(result.message || 'Failed to register face photo.', 'danger');
