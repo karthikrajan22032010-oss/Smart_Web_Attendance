@@ -493,11 +493,11 @@
         </div>
     </div>
 
-    <!-- Modal 2: Register New Face -->
+    <!-- Modal 2: Register New Face & Manage / Delete Students -->
     <div class="modal-backdrop" id="registerModal">
         <div class="modal-card">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-camera"></i> Register New Face Photo</h3>
+                <h3><i class="fa-solid fa-user-gear"></i> Register Face & Delete Students</h3>
                 <button class="close-btn" id="closeRegisterModalBtn">&times;</button>
             </div>
             <form id="registerFaceForm" enctype="multipart/form-data">
@@ -511,10 +511,22 @@
                         <input type="file" id="faceImage" accept="image/*" required>
                         <small class="help-text">Select a clear frontal photo of the person.</small>
                     </div>
+
+                    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 16px 0;">
+                    
+                    <div class="manage-students-section">
+                        <label style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <span><i class="fa-solid fa-users text-primary"></i> Registered Students List:</span>
+                            <span class="badge badge-ontime" id="registeredStudentsCountBadge">0 Enrolled</span>
+                        </label>
+                        <div class="registered-students-list" id="registeredStudentsManageList" style="max-height: 180px; overflow-y: auto; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+                            <span class="text-muted small">Loading student list...</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="cancelRegisterBtn">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-upload"></i> Upload & Train</button>
+                    <button type="button" class="btn btn-secondary" id="cancelRegisterBtn">Close</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-upload"></i> Upload & Train Face</button>
                 </div>
             </form>
         </div>

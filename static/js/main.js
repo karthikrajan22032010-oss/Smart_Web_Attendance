@@ -441,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             renderDailyTable();
+            renderRegisteredStudentsManageList();
         } catch (err) {
             console.error("Error fetching daily attendance:", err);
         }
@@ -609,6 +610,64 @@ document.addEventListener('DOMContentLoaded', () => {
                 </label>
             `;
         }).join('');
+    }
+
+    // Function to render registered students list with Delete buttons inside Modal 2
+    function renderRegisteredStudentsManageList() {
+        const container = document.getElementById('registeredStudentsManageList');
+        const badge = document.getElementById('registeredStudentsCountBadge');
+        if (!container) return;
+
+        if (badge) {
+            badge.textContent = `${cachedRegisteredStudents.length} Enrolled`;
+        }
+
+        if (cachedRegisteredStudents.length === 0) {
+            container.innerHTML = `<span class="text-muted small">No registered students found. Upload a face photo above to train.</span>`;
+            return;
+        }
+
+        container.innerHTML = cachedRegisteredStudents.map(student => {
+            return `
+                <div class="student-manage-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 8px;">
+                    <span style="font-weight: 600; color: var(--text-main); font-size: 13px;"><i class="fa-solid fa-circle-user text-primary" style="margin-right: 6px;"></i> ${escapeHtml(student)}</span>
+                    <button type="button" class="btn btn-danger btn-xs btnDeleteStudent" data-name="${escapeHtml(student)}" title="Delete student and remove face recognition model">
+                        <i class="fa-solid fa-trash-can"></i> Delete
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        // Attach Delete Student Click Handler
+        container.querySelectorAll('.btnDeleteStudent').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const name = e.currentTarget.getAttribute('data-name');
+                if (!name) return;
+
+                if (!confirm(`Are you sure you want to delete student "${name}" and remove their face recognition data?`)) {
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/delete_student', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok && data.success) {
+                        showToast(data.message || `Successfully deleted student ${name}!`, 'success');
+                        fetchAttendanceData();
+                    } else {
+                        showToast(data.message || `Failed to delete student ${name}.`, 'danger');
+                    }
+                } catch (err) {
+                    console.error("Error deleting student:", err);
+                    showToast('Error connecting to server to delete student.', 'danger');
+                }
+            });
+        });
     }
 
     // Select All / Unselect All
@@ -942,7 +1001,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (openRegisterModalBtn) openRegisterModalBtn.addEventListener('click', () => toggleModal(registerModal, true));
+    if (openRegisterModalBtn) {
+        openRegisterModalBtn.addEventListener('click', () => {
+            renderRegisteredStudentsManageList();
+            toggleModal(registerModal, true);
+        });
+    }
     if (closeManualModalBtn) closeManualModalBtn.addEventListener('click', () => toggleModal(manualModal, false));
     if (cancelManualBtn) cancelManualBtn.addEventListener('click', () => toggleModal(manualModal, false));
     if (closeRegisterModalBtn) closeRegisterModalBtn.addEventListener('click', () => toggleModal(registerModal, false));

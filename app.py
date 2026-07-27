@@ -923,6 +923,62 @@ def register_face():
     return jsonify({"success": True, "message": f"Successfully registered face for {name}!"})
 
 
+@app.route('/api/delete_student', methods=['POST'])
+def delete_student():
+    """API to delete registered student, remove their face photo, and purge records."""
+    data = request.get_json() or {}
+    name = str(data.get('name', '')).strip()
+
+    if not name:
+        return jsonify({"success": False, "message": "Student name is required!"}), 400
+
+    deleted_photo = False
+    valid_extensions = ('.jpg', '.jpeg', '.png')
+    
+    # 1. Delete face photo from known_faces directory
+    if os.path.exists(KNOWN_FACES_DIR):
+        for filename in os.listdir(KNOWN_FACES_DIR):
+            if filename.lower().endswith(valid_extensions):
+                fname_no_ext = os.path.splitext(filename)[0].replace('_', ' ').title()
+                if fname_no_ext.lower() == name.lower():
+                    fpath = os.path.join(KNOWN_FACES_DIR, filename)
+                    try:
+                        os.remove(fpath)
+                        deleted_photo = True
+                        print(f"[INFO] Deleted face photo: {fpath}")
+                    except Exception as err:
+                        print(f"[ERROR] Deleting face photo {fpath}: {err}")
+
+    # 2. Delete student records from class CSV files
+    target_csvs = ["attendance_CLASS1.csv", "attendance_ECE2.csv", "attendance_ECE3.csv", "attendance.csv"]
+    for csv_file in target_csvs:
+        if os.path.exists(csv_file) and os.path.getsize(csv_file) > 0:
+            try:
+                df = pd.read_csv(csv_file)
+                if 'Name' in df.columns:
+                    initial_len = len(df)
+                    df = df[df['Name'].str.lower() != name.lower()]
+                    if len(df) < initial_len:
+                        df.to_csv(csv_file, index=False)
+            except Exception as e:
+                print(f"[ERROR] Purging student from {csv_file}: {e}")
+
+    # 3. Delete from MongoDB if active
+    if USE_MONGO and db is not None:
+        try:
+            db.registered_faces.delete_many({"name": {"$regex": f"^{name}$", "$options": "i"}})
+            for code in ["CLASS1", "ECE2", "ECE3"]:
+                db[f"attendance_logs_{code}"].delete_many({"name": {"$regex": f"^{name}$", "$options": "i"}})
+        except Exception as err:
+            print(f"[WARNING] MongoDB delete student error: {err}")
+
+    # 4. Reload in-memory face encodings
+    load_known_faces()
+    log_activity(f"Teacher deleted student '{name}' and purged face registration.", "warning")
+
+    return jsonify({"success": True, "message": f"Successfully deleted student '{name}'!"})
+
+
 @app.route('/api/clear_attendance', methods=['POST'])
 def clear_attendance():
     """API to clear today's class-isolated attendance records."""
