@@ -200,7 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const videoOverlayHUD = document.getElementById('videoOverlayHUD');
 
         isCameraActive = false;
-        if (serverVideoImg) serverVideoImg.src = '';
+        if (serverVideoImg) {
+            serverVideoImg.src = '';
+            serverVideoImg.removeAttribute('src');
+        }
         if (camStandbyScreen) camStandbyScreen.style.display = 'flex';
         if (videoOverlayHUD) videoOverlayHUD.style.display = 'none';
 

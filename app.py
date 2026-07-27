@@ -538,7 +538,9 @@ def index():
 
 @app.route('/video_feed')
 def video_feed():
-    """Video streaming route returning multipart JPEG frames."""
+    """Video streaming route returning multipart JPEG frames (requires login session)."""
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized camera access. Please log in first."}), 401
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
