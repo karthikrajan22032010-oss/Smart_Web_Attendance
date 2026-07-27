@@ -1012,6 +1012,154 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeRegisterModalBtn) closeRegisterModalBtn.addEventListener('click', () => toggleModal(registerModal, false));
     if (cancelRegisterBtn) cancelRegisterBtn.addEventListener('click', () => toggleModal(registerModal, false));
 
+    // --- 9. Class Roster & Student Template Controller ---
+    const rosterModal = document.getElementById('rosterModal');
+    const openRosterModalBtn = document.getElementById('openRosterModalBtn');
+    const closeRosterModalBtn = document.getElementById('closeRosterModalBtn');
+    const cancelRosterBtn = document.getElementById('cancelRosterBtn');
+    const btnAddRosterStudent = document.getElementById('btnAddRosterStudent');
+    const btnBulkAddRoster = document.getElementById('btnBulkAddRoster');
+
+    async function fetchRosterData() {
+        const container = document.getElementById('rosterStudentsList');
+        const badge = document.getElementById('rosterCountBadge');
+        if (!container) return;
+
+        try {
+            const res = await fetch('/api/roster');
+            if (!res.ok) return;
+            const data = await res.json();
+            const roster = data.roster || [];
+
+            if (badge) badge.textContent = `${roster.length} Students`;
+
+            if (roster.length === 0) {
+                container.innerHTML = `<span class="text-muted small">No students in class roster template yet. Add student or bulk import template above!</span>`;
+                return;
+            }
+
+            container.innerHTML = roster.map(item => {
+                const sName = typeof item === 'object' ? item.name : item;
+                const rNo = (typeof item === 'object' && item.roll_no && item.roll_no !== '-') ? ` [Roll No: ${item.roll_no}]` : '';
+                return `
+                    <div class="student-manage-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 8px;">
+                        <span style="font-weight: 600; color: var(--text-main); font-size: 13px;"><i class="fa-solid fa-graduation-cap text-primary" style="margin-right: 6px;"></i> ${escapeHtml(sName)}${escapeHtml(rNo)}</span>
+                        <button type="button" class="btn btn-danger btn-xs btnRemoveRosterStudent" data-name="${escapeHtml(sName)}" title="Remove student from class roster template">
+                            <i class="fa-solid fa-user-minus"></i> Remove
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            // Attach Remove Event Handlers
+            container.querySelectorAll('.btnRemoveRosterStudent').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const name = e.currentTarget.getAttribute('data-name');
+                    if (!name) return;
+
+                    if (!confirm(`Remove "${name}" from class roster template?`)) return;
+
+                    try {
+                        const delRes = await fetch('/api/roster/remove', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name })
+                        });
+                        const delData = await delRes.json();
+                        if (delRes.ok && delData.success) {
+                            showToast(delData.message, 'success');
+                            fetchRosterData();
+                            fetchAttendanceData();
+                        } else {
+                            showToast(delData.message || 'Failed to remove student from roster', 'danger');
+                        }
+                    } catch (err) {
+                        showToast('Error removing student from roster', 'danger');
+                    }
+                });
+            });
+        } catch (err) {
+            console.error("Error fetching roster:", err);
+        }
+    }
+
+    if (openRosterModalBtn) {
+        openRosterModalBtn.addEventListener('click', () => {
+            fetchRosterData();
+            toggleModal(rosterModal, true);
+        });
+    }
+
+    if (closeRosterModalBtn) closeRosterModalBtn.addEventListener('click', () => toggleModal(rosterModal, false));
+    if (cancelRosterBtn) cancelRosterBtn.addEventListener('click', () => toggleModal(rosterModal, false));
+
+    if (btnAddRosterStudent) {
+        btnAddRosterStudent.addEventListener('click', async () => {
+            const nameInput = document.getElementById('rosterStudentName');
+            const rollInput = document.getElementById('rosterStudentRollNo');
+            const name = nameInput ? nameInput.value.trim() : '';
+            const roll_no = rollInput ? rollInput.value.trim() : '';
+
+            if (!name) {
+                showToast('Please enter student name!', 'danger');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/roster/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, roll_no })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showToast(data.message, 'success');
+                    if (nameInput) nameInput.value = '';
+                    if (rollInput) rollInput.value = '';
+                    fetchRosterData();
+                    fetchAttendanceData();
+                } else {
+                    showToast(data.message || 'Error adding student', 'danger');
+                }
+            } catch (err) {
+                showToast('Error adding student to roster', 'danger');
+            }
+        });
+    }
+
+    if (btnBulkAddRoster) {
+        btnBulkAddRoster.addEventListener('click', async () => {
+            const textEl = document.getElementById('bulkRosterText');
+            const names_text = textEl ? textEl.value.trim() : '';
+
+            if (!names_text) {
+                showToast('Please paste or type student names line by line!', 'danger');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/roster/bulk_add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ names_text })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showToast(data.message, 'success');
+                    if (textEl) textEl.value = '';
+                    fetchRosterData();
+                    fetchAttendanceData();
+                } else {
+                    showToast(data.message || 'Error bulk importing roster', 'danger');
+                }
+            } catch (err) {
+                showToast('Error bulk importing roster', 'danger');
+            }
+        });
+    }
+
     // Submit Manual Entry & OD Form
     if (manualEntryForm) {
         manualEntryForm.addEventListener('submit', async (e) => {

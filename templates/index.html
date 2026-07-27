@@ -249,6 +249,9 @@
                             <button class="btn btn-primary btn-sm" id="openManualModalBtn">
                                 <i class="fa-solid fa-user-pen"></i> Teacher Manual & OD
                             </button>
+                            <button class="btn btn-outline btn-sm" id="openRosterModalBtn" title="Manage Class Student Roster & Name Template">
+                                <i class="fa-solid fa-users-rectangle"></i> Class Roster & Template
+                            </button>
                             <button class="btn btn-outline btn-sm" id="openRegisterModalBtn">
                                 <i class="fa-solid fa-camera"></i> Register Face
                             </button>
@@ -563,6 +566,52 @@
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Apply Time Sync</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: Class Roster & Student Name Template Manager -->
+    <div class="modal-backdrop" id="rosterModal">
+        <div class="modal-card" style="max-width: 580px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-users-rectangle"></i> Class Student Roster Template</h3>
+                <button class="close-btn" id="closeRosterModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Single Add Group -->
+                <div class="roster-add-group" style="display: flex; gap: 8px; margin-bottom: 14px;">
+                    <input type="text" id="rosterStudentName" placeholder="Student Name (e.g. Alex Johnson)" style="flex: 1.2;">
+                    <input type="text" id="rosterStudentRollNo" placeholder="Roll No (Optional)" style="flex: 0.8;">
+                    <button type="button" class="btn btn-primary btn-sm" id="btnAddRosterStudent">
+                        <i class="fa-solid fa-user-plus"></i> Add
+                    </button>
+                </div>
+
+                <!-- Bulk Import Template Collapsible Section -->
+                <details style="margin-bottom: 16px; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px;">
+                    <summary style="cursor: pointer; font-weight: 600; color: var(--primary);">
+                        <i class="fa-solid fa-file-import"></i> Bulk Add / Paste Student Name List Template
+                    </summary>
+                    <div style="margin-top: 10px;">
+                        <textarea id="bulkRosterText" rows="4" placeholder="Paste student names here (one per line):&#10;101 - Alex Johnson&#10;102 - Emily Davis&#10;Jane Smith" style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 6px; font-family: monospace; font-size: 13px; margin-bottom: 8px;"></textarea>
+                        <button type="button" class="btn btn-primary btn-sm" id="btnBulkAddRoster">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Bulk Import Names Template
+                        </button>
+                    </div>
+                </details>
+
+                <div class="manage-roster-list-section">
+                    <label style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span><i class="fa-solid fa-id-badge text-primary"></i> Current Class Student List:</span>
+                        <span class="badge badge-ontime" id="rosterCountBadge">0 Students</span>
+                    </label>
+                    <div class="roster-students-list" id="rosterStudentsList" style="max-height: 220px; overflow-y: auto; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+                        <span class="text-muted small">Loading class roster list...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelRosterBtn">Close Roster</button>
+            </div>
         </div>
     </div>
 

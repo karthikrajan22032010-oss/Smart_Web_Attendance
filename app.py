@@ -1,6 +1,7 @@
 import os
 import cv2
 import csv
+import json
 import time
 import datetime
 import threading
@@ -98,6 +99,31 @@ def get_class_csv_path():
     fpath = f"attendance_{code}.csv"
     ensure_csv_file(fpath)
     return fpath
+
+def get_class_roster_path():
+    """Returns class-isolated JSON student roster file path."""
+    code = get_class_code()
+    return f"roster_{code}.json"
+
+def load_class_roster():
+    """Loads student name list roster for active logged-in class account."""
+    rpath = get_class_roster_path()
+    if os.path.exists(rpath):
+        try:
+            with open(rpath, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[ERROR] Loading roster {rpath}: {e}")
+    return []
+
+def save_class_roster(roster_list):
+    """Saves student roster list to class-isolated JSON file."""
+    rpath = get_class_roster_path()
+    try:
+        with open(rpath, 'w', encoding='utf-8') as f:
+            json.dump(roster_list, f, indent=2)
+    except Exception as e:
+        print(f"[ERROR] Saving roster {rpath}: {e}")
 
 # Ensure directories exist
 os.makedirs(KNOWN_FACES_DIR, exist_ok=True)
@@ -740,9 +766,13 @@ def get_attendance():
             today_df = df[df['Date'] == today_date]
             logs = today_df.to_dict(orient='records')
 
+            roster_list = load_class_roster()
+            roster_names = [item['name'] if isinstance(item, dict) else str(item) for item in roster_list]
+
             unique_dates = df['Date'].unique().tolist()
             total_unique_days = max(1, len(unique_dates))
-            all_known_names = sorted(list(set(df['Name'].tolist() + known_face_names)))
+            all_enrolled_list = sorted(list(set(known_face_names + roster_names)))
+            all_known_names = sorted(list(set(df['Name'].tolist() + all_enrolled_list)))
 
             for person in all_known_names:
                 person_df = df[df['Name'].str.lower() == person.lower()]
@@ -764,16 +794,21 @@ def get_attendance():
         except Exception as e:
             print(f"[ERROR] Reading class CSV for stats: {e}")
 
+    roster_list = load_class_roster()
+    roster_names = [item['name'] if isinstance(item, dict) else str(item) for item in roster_list]
+    all_enrolled_list = sorted(list(set(known_face_names + roster_names)))
+
     total_count = len(logs)
     ontime_count = sum(1 for item in logs if str(item.get('Status')).strip() == 'On Time')
     late_count = sum(1 for item in logs if str(item.get('Status')).strip() == 'Late')
     od_count = sum(1 for item in logs if 'OD' in str(item.get('Status')).upper() or 'DUTY' in str(item.get('Status')).upper())
-    total_enrolled = max(len(known_face_names), len(student_stats))
+    total_enrolled = max(len(all_enrolled_list), len(student_stats))
     absent_count = max(0, total_enrolled - total_count)
 
     return jsonify({
         "attendance": logs,
-        "registered_students": known_face_names,
+        "registered_students": all_enrolled_list,
+        "roster": roster_list,
         "student_stats": student_stats,
         "current_time_info": {
             "date_str": now.strftime("%a, %b %d, %Y"),
@@ -972,11 +1007,133 @@ def delete_student():
         except Exception as err:
             print(f"[WARNING] MongoDB delete student error: {err}")
 
-    # 4. Reload in-memory face encodings
+    # 4. Remove from class roster file
+    current_roster = load_class_roster()
+    new_roster = [s for s in current_roster if (s.get('name', '') if isinstance(s, dict) else str(s)).lower() != name.lower()]
+    if len(new_roster) != len(current_roster):
+        save_class_roster(new_roster)
+
+    # 5. Reload in-memory face encodings
     load_known_faces()
     log_activity(f"Teacher deleted student '{name}' and purged face registration.", "warning")
 
     return jsonify({"success": True, "message": f"Successfully deleted student '{name}'!"})
+
+
+# --- Class Student Roster & Template APIs ---
+
+@app.route('/api/roster', methods=['GET'])
+def get_roster():
+    """API returning student roster template list for active class account."""
+    roster = load_class_roster()
+    return jsonify({
+        "success": True,
+        "roster": roster,
+        "class_code": get_class_code(),
+        "total_enrolled": len(roster)
+    })
+
+
+@app.route('/api/roster/add', methods=['POST'])
+def add_roster_student():
+    """API to add single student (Name, Roll No) to class roster template."""
+    data = request.get_json() or {}
+    name = str(data.get('name', '')).strip()
+    roll_no = str(data.get('roll_no', '')).strip() or "-"
+
+    if not name:
+        return jsonify({"success": False, "message": "Student name is required!"}), 400
+
+    roster = load_class_roster()
+    # Check if student already exists in roster
+    for item in roster:
+        item_name = item.get('name', '') if isinstance(item, dict) else str(item)
+        if item_name.lower() == name.lower():
+            return jsonify({"success": False, "message": f"Student '{name}' is already in class roster!"}), 400
+
+    roster.append({
+        "name": name,
+        "roll_no": roll_no,
+        "added_at": get_current_now().strftime("%Y-%m-%d %I:%M %p")
+    })
+    save_class_roster(roster)
+    log_activity(f"Added student '{name}' (Roll No: {roll_no}) to {get_class_code()} roster template.", "success")
+
+    return jsonify({"success": True, "message": f"Successfully added '{name}' to {get_class_code()} class roster!"})
+
+
+@app.route('/api/roster/bulk_add', methods=['POST'])
+def bulk_add_roster():
+    """API to bulk import student name list template (pasted names line-by-line)."""
+    data = request.get_json() or {}
+    names_text = str(data.get('names_text', '')).strip()
+
+    if not names_text:
+        return jsonify({"success": False, "message": "Please paste or enter student names!"}), 400
+
+    raw_lines = [line.strip() for line in names_text.splitlines() if line.strip()]
+    if not raw_lines:
+        return jsonify({"success": False, "message": "No valid student names found in text!"}), 400
+
+    roster = load_class_roster()
+    existing_names = set(
+        (item.get('name', '') if isinstance(item, dict) else str(item)).lower()
+        for item in roster
+    )
+
+    added_count = 0
+    for line in raw_lines:
+        # Check if line contains "RollNo - Name" or "RollNo, Name" or just "Name"
+        parts = line.split('-', 1) if '-' in line else line.split(',', 1)
+        if len(parts) == 2 and parts[0].strip().replace(' ', '').isalnum():
+            r_no = parts[0].strip()
+            s_name = parts[1].strip()
+        else:
+            r_no = "-"
+            s_name = line.strip()
+
+        if s_name and s_name.lower() not in existing_names:
+            roster.append({
+                "name": s_name,
+                "roll_no": r_no,
+                "added_at": get_current_now().strftime("%Y-%m-%d %I:%M %p")
+            })
+            existing_names.add(s_name.lower())
+            added_count += 1
+
+    save_class_roster(roster)
+    log_activity(f"Bulk imported {added_count} students into {get_class_code()} roster template.", "success")
+
+    return jsonify({
+        "success": True,
+        "message": f"Successfully added {added_count} student(s) to {get_class_code()} class roster!",
+        "added_count": added_count
+    })
+
+
+@app.route('/api/roster/remove', methods=['POST'])
+def remove_roster_student():
+    """API to remove student from class roster template."""
+    data = request.get_json() or {}
+    name = str(data.get('name', '')).strip()
+
+    if not name:
+        return jsonify({"success": False, "message": "Student name required"}), 400
+
+    roster = load_class_roster()
+    initial_len = len(roster)
+    new_roster = [
+        item for item in roster
+        if (item.get('name', '') if isinstance(item, dict) else str(item)).lower() != name.lower()
+    ]
+
+    if len(new_roster) == initial_len:
+        return jsonify({"success": False, "message": f"Student '{name}' not found in roster."}), 404
+
+    save_class_roster(new_roster)
+    log_activity(f"Removed student '{name}' from {get_class_code()} roster template.", "warning")
+
+    return jsonify({"success": True, "message": f"Removed '{name}' from {get_class_code()} roster template!"})
 
 
 @app.route('/api/clear_attendance', methods=['POST'])
