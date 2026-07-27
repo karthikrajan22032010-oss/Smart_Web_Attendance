@@ -40,6 +40,21 @@ def get_current_now():
 
 # Class Account Credentials
 CLASS_ACCOUNTS = {
+    "CLASS 1": {
+        "password": "123456789",
+        "class_name": "Class 1 (LAPC)",
+        "code": "CLASS1"
+    },
+    "CLASS 1@LAPC": {
+        "password": "123456789",
+        "class_name": "Class 1 (LAPC)",
+        "code": "CLASS1"
+    },
+    "CLASS1": {
+        "password": "123456789",
+        "class_name": "Class 1 (LAPC)",
+        "code": "CLASS1"
+    },
     "ECE 2YEAR@LAPC": {
         "password": "123456789",
         "class_name": "ECE 2nd Year (LAPC)",
@@ -150,6 +165,7 @@ purge_thread.start()
 
 def init_attendance_csv():
     """Ensures class-isolated CSV files exist."""
+    ensure_csv_file("attendance_CLASS1.csv")
     ensure_csv_file("attendance_ECE2.csv")
     ensure_csv_file("attendance_ECE3.csv")
     ensure_csv_file("attendance.csv")
