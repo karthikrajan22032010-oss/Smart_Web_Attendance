@@ -72,7 +72,10 @@
         <header class="app-header">
             <div class="brand">
                 <div class="brand-logo-container">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="3D Logo" class="brand-logo-3d">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="3D Logo" class="brand-logo-3d" id="headerLogoImg" onerror="this.style.display='none'; document.getElementById('headerLogoIcon').style.display='flex';">
+                    <div class="brand-logo-fallback" id="headerLogoIcon" style="display: none;">
+                        <i class="fa-solid fa-face-smile text-primary"></i>
+                    </div>
                 </div>
                 <div class="brand-text">
                     <h1>SmartAttendance<span>Portal</span></h1>
