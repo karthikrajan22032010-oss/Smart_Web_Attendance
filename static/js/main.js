@@ -168,42 +168,125 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Camera Control State System
+    // Camera Control State & Multi-Device System
     let isCameraActive = false;
+    let useClientDeviceCam = true; // Default: Activate local device camera (Mobile / Laptop / Tablet)
+    let clientMediaStream = null;
+    let clientFrameInterval = null;
+    let currentFacingMode = 'user'; // 'user' (Front) or 'environment' (Rear/Back)
 
-    function startCamera() {
+    async function startCamera() {
         const serverVideoImg = document.getElementById('serverVideoImg');
+        const clientVideo = document.getElementById('clientVideo');
         const camStandbyScreen = document.getElementById('camStandbyScreen');
         const camStatusMsg = document.getElementById('camStatusMsg');
         const btnToggleCamera = document.getElementById('btnToggleCamera');
+        const btnFlipCam = document.getElementById('btnFlipCam');
+        const btnToggleCamSource = document.getElementById('btnToggleCamSource');
         const videoOverlayHUD = document.getElementById('videoOverlayHUD');
 
         isCameraActive = true;
-        if (serverVideoImg) serverVideoImg.src = '/video_feed?' + new Date().getTime();
         if (camStandbyScreen) camStandbyScreen.style.display = 'none';
         if (videoOverlayHUD) videoOverlayHUD.style.display = 'block';
 
-        if (camStatusMsg) {
-            camStatusMsg.innerHTML = `<i class="fa-solid fa-shield-halved text-success"></i> OpenCV Face Match Active`;
-        }
         if (btnToggleCamera) {
             btnToggleCamera.className = 'btn btn-danger btn-sm';
             btnToggleCamera.innerHTML = `<i class="fa-solid fa-power-off"></i> Turn Camera OFF`;
+        }
+
+        // Try local device camera first (Mobile / Tablet / Laptop / Desktop webcam)
+        if (useClientDeviceCam && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            try {
+                if (clientMediaStream) {
+                    clientMediaStream.getTracks().forEach(track => track.stop());
+                }
+
+                if (serverVideoImg) {
+                    serverVideoImg.style.display = 'none';
+                    serverVideoImg.src = '';
+                    serverVideoImg.removeAttribute('src');
+                }
+
+                const constraints = {
+                    video: {
+                        facingMode: currentFacingMode,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                clientMediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                if (clientVideo) {
+                    clientVideo.srcObject = clientMediaStream;
+                    clientVideo.style.display = 'block';
+                    await clientVideo.play();
+                }
+
+                if (btnFlipCam) btnFlipCam.style.display = 'inline-flex';
+                if (btnToggleCamSource) btnToggleCamSource.innerHTML = `<i class="fa-solid fa-desktop"></i> Switch to Host PC Feed`;
+
+                if (camStatusMsg) {
+                    camStatusMsg.innerHTML = `<i class="fa-solid fa-camera text-success"></i> ${currentFacingMode === 'user' ? 'Front' : 'Rear'} Device Camera Active`;
+                }
+
+                startClientFrameProcessor();
+                return;
+            } catch (err) {
+                console.warn("[INFO] Client device camera permission denied or unavailable, falling back to server feed:", err);
+                useClientDeviceCam = false;
+            }
+        }
+
+        // Fallback: Server Local Feed
+        if (clientVideo) {
+            clientVideo.style.display = 'none';
+            if (clientVideo.srcObject) {
+                clientVideo.srcObject.getTracks().forEach(track => track.stop());
+                clientVideo.srcObject = null;
+            }
+        }
+        stopClientFrameProcessor();
+
+        if (btnFlipCam) btnFlipCam.style.display = 'none';
+        if (btnToggleCamSource) btnToggleCamSource.innerHTML = `<i class="fa-solid fa-mobile-screen"></i> Use Device Camera`;
+
+        if (serverVideoImg) {
+            serverVideoImg.style.display = 'block';
+            serverVideoImg.src = '/video_feed?' + new Date().getTime();
+        }
+
+        if (camStatusMsg) {
+            camStatusMsg.innerHTML = `<i class="fa-solid fa-shield-halved text-success"></i> Server Feed Active`;
         }
     }
 
     function stopCamera() {
         const serverVideoImg = document.getElementById('serverVideoImg');
+        const clientVideo = document.getElementById('clientVideo');
         const camStandbyScreen = document.getElementById('camStandbyScreen');
         const camStatusMsg = document.getElementById('camStatusMsg');
         const btnToggleCamera = document.getElementById('btnToggleCamera');
         const videoOverlayHUD = document.getElementById('videoOverlayHUD');
 
         isCameraActive = false;
+        stopClientFrameProcessor();
+
+        if (clientMediaStream) {
+            clientMediaStream.getTracks().forEach(track => track.stop());
+            clientMediaStream = null;
+        }
+
+        if (clientVideo) {
+            clientVideo.style.display = 'none';
+            clientVideo.srcObject = null;
+        }
+
         if (serverVideoImg) {
+            serverVideoImg.style.display = 'none';
             serverVideoImg.src = '';
             serverVideoImg.removeAttribute('src');
         }
+
         if (camStandbyScreen) camStandbyScreen.style.display = 'flex';
         if (videoOverlayHUD) videoOverlayHUD.style.display = 'none';
 
@@ -213,6 +296,52 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnToggleCamera) {
             btnToggleCamera.className = 'btn btn-success btn-sm';
             btnToggleCamera.innerHTML = `<i class="fa-solid fa-power-off"></i> Turn Camera ON`;
+        }
+    }
+
+    function startClientFrameProcessor() {
+        stopClientFrameProcessor();
+        const clientVideo = document.getElementById('clientVideo');
+        const clientCanvas = document.getElementById('clientCanvas');
+        if (!clientVideo || !clientCanvas) return;
+
+        const ctx = clientCanvas.getContext('2d');
+
+        clientFrameInterval = setInterval(async () => {
+            if (!isCameraActive || !useClientDeviceCam || clientVideo.paused || clientVideo.ended) return;
+
+            if (clientVideo.videoWidth > 0 && clientVideo.videoHeight > 0) {
+                clientCanvas.width = 640;
+                clientCanvas.height = 480;
+                ctx.drawImage(clientVideo, 0, 0, 640, 480);
+
+                const dataUrl = clientCanvas.toDataURL('image/jpeg', 0.7);
+
+                try {
+                    const res = await fetch('/api/process_client_frame', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: dataUrl })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.faces && data.faces.length > 0) {
+                        data.faces.forEach(f => {
+                            if (f.name && f.name !== 'Unknown') {
+                                fetchAttendanceData();
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.error("Client frame post error:", err);
+                }
+            }
+        }, 700);
+    }
+
+    function stopClientFrameProcessor() {
+        if (clientFrameInterval) {
+            clearInterval(clientFrameInterval);
+            clientFrameInterval = null;
         }
     }
 
@@ -229,6 +358,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnToggleCamera = document.getElementById('btnToggleCamera');
     if (btnToggleCamera) {
         btnToggleCamera.addEventListener('click', toggleCamera);
+    }
+
+    const btnFlipCam = document.getElementById('btnFlipCam');
+    if (btnFlipCam) {
+        btnFlipCam.addEventListener('click', () => {
+            currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+            showToast(`Switched to ${currentFacingMode === 'user' ? 'Front Selfie' : 'Rear Main'} Camera`, 'info');
+            if (isCameraActive) startCamera();
+        });
+    }
+
+    const btnToggleCamSource = document.getElementById('btnToggleCamSource');
+    if (btnToggleCamSource) {
+        btnToggleCamSource.addEventListener('click', () => {
+            useClientDeviceCam = !useClientDeviceCam;
+            showToast(useClientDeviceCam ? 'Switched to Local Device Camera' : 'Switched to Host PC Feed', 'info');
+            if (isCameraActive) startCamera();
+        });
     }
 
     function showLogin() {
@@ -457,150 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Device WebRTC Camera Controller ---
-    let clientMediaStream = null;
-    let clientFrameInterval = null;
-    let currentFacingMode = 'user'; // 'user' (front) or 'environment' (back)
-    let isUsingDeviceCam = false;
 
-    const serverVideoImg = document.getElementById('serverVideoImg');
-    const clientVideo = document.getElementById('clientVideo');
-    const clientCanvas = document.getElementById('clientCanvas');
-    const btnToggleCamSource = document.getElementById('btnToggleCamSource');
-    const btnFlipCam = document.getElementById('btnFlipCam');
-    const camStatusMsg = document.getElementById('camStatusMsg');
-
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-    async function startDeviceCamera() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showToast('Device camera access not supported on this browser.', 'danger');
-            return;
-        }
-
-        try {
-            if (clientMediaStream) {
-                clientMediaStream.getTracks().forEach(track => track.stop());
-            }
-
-            const constraints = {
-                video: {
-                    facingMode: currentFacingMode,
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                },
-                audio: false
-            };
-
-            clientMediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-            if (clientVideo) {
-                clientVideo.srcObject = clientMediaStream;
-                clientVideo.style.display = 'block';
-                await clientVideo.play();
-            }
-
-            if (serverVideoImg) serverVideoImg.style.display = 'none';
-            if (btnFlipCam) btnFlipCam.style.display = 'inline-flex';
-            if (btnToggleCamSource) {
-                btnToggleCamSource.innerHTML = `<i class="fa-solid fa-server"></i> Use Server Camera`;
-            }
-
-            if (camStatusMsg) {
-                camStatusMsg.innerHTML = `<i class="fa-solid fa-mobile-screen text-success"></i> Device Camera Active`;
-            }
-
-            isUsingDeviceCam = true;
-            startClientFrameProcessing();
-            showToast('Using Device Camera!', 'success');
-
-        } catch (err) {
-            console.error("Device Camera error:", err);
-            showToast(`Could not access device camera: ${err.message}`, 'danger');
-            stopDeviceCamera();
-        }
-    }
-
-    function stopDeviceCamera() {
-        if (clientMediaStream) {
-            clientMediaStream.getTracks().forEach(track => track.stop());
-            clientMediaStream = null;
-        }
-
-        if (clientFrameInterval) {
-            clearInterval(clientFrameInterval);
-            clientFrameInterval = null;
-        }
-
-        if (clientVideo) clientVideo.style.display = 'none';
-        if (serverVideoImg) serverVideoImg.style.display = 'block';
-        if (btnFlipCam) btnFlipCam.style.display = 'none';
-        if (btnToggleCamSource) {
-            btnToggleCamSource.innerHTML = `<i class="fa-solid fa-mobile-screen"></i> Use Device Camera`;
-        }
-
-        if (camStatusMsg) {
-            camStatusMsg.innerHTML = `<i class="fa-solid fa-shield-halved"></i> Server Camera Stream Active`;
-        }
-
-        isUsingDeviceCam = false;
-    }
-
-    function startClientFrameProcessing() {
-        if (clientFrameInterval) clearInterval(clientFrameInterval);
-
-        clientFrameInterval = setInterval(async () => {
-            if (!isUsingDeviceCam || !clientVideo || clientVideo.paused || clientVideo.ended) return;
-
-            try {
-                const width = clientVideo.videoWidth || 640;
-                const height = clientVideo.videoHeight || 480;
-
-                if (!clientCanvas) return;
-                clientCanvas.width = width;
-                clientCanvas.height = height;
-
-                const ctx = clientCanvas.getContext('2d');
-                ctx.drawImage(clientVideo, 0, 0, width, height);
-
-                const dataUrl = clientCanvas.toDataURL('image/jpeg', 0.6);
-
-                const res = await fetch('/api/process_client_frame', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: dataUrl })
-                });
-
-                if (res.ok) {
-                    const result = await res.json();
-                    if (result.success && result.detected_faces && result.detected_faces.length > 0) {
-                        const names = result.detected_faces.map(f => f.name).join(', ');
-                        if (camStatusMsg) {
-                            camStatusMsg.innerHTML = `<i class="fa-solid fa-face-smile text-success"></i> Detected: <strong>${escapeHtml(names)}</strong>`;
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error("Frame processing error:", err);
-            }
-        }, 700);
-    }
-
-    if (btnToggleCamSource) {
-        btnToggleCamSource.addEventListener('click', () => {
-            if (isUsingDeviceCam) {
-                stopDeviceCamera();
-            } else {
-                startDeviceCamera();
-            }
-        });
-    }
-
-    if (btnFlipCam) {
-        btnFlipCam.addEventListener('click', () => {
-            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-            startDeviceCamera();
-        });
-    }
 
     // Function to render student checkboxes inside modal
     function renderStudentCheckboxes() {
