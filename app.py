@@ -39,7 +39,14 @@ def get_storage_subfolder(subname):
     return folder_path
 
 def get_known_faces_dir():
-    return get_storage_subfolder("known_faces")
+    code = get_class_code()
+    class_faces_dir = os.path.join(CUSTOM_STORAGE_DIR, "known_faces", code)
+    if ALLOW_DISK_STORAGE:
+        try:
+            os.makedirs(class_faces_dir, exist_ok=True)
+        except Exception as err:
+            print(f"[WARNING] Could not create class faces directory {class_faces_dir}: {err}")
+    return class_faces_dir
 
 def get_recordings_dir():
     return get_storage_subfolder("recorded_videos")
@@ -294,7 +301,7 @@ def safe_detect_faces(img_gray, scaleFactor=1.05, minNeighbors=2, minSize=None):
 
 
 def load_known_faces():
-    """Loads and encodes all images stored in known_faces directory."""
+    """Loads and encodes all images stored in active class known_faces directory."""
     global known_face_encodings, known_face_names, lbph_recognizer, lbph_trained
     known_face_encodings = []
     known_face_names = []
@@ -305,43 +312,65 @@ def load_known_faces():
 
     valid_extensions = ('.jpg', '.jpeg', '.png')
     idx = 0
-    faces_dir = get_known_faces_dir()
-    if os.path.exists(faces_dir):
-        for filename in os.listdir(faces_dir):
-            if filename.lower().endswith(valid_extensions):
-                name = os.path.splitext(filename)[0].replace('_', ' ').title()
-                filepath = os.path.join(faces_dir, filename)
-                
-                if HAVE_FACE_RECOGNITION:
-                    try:
-                        image = face_recognition.load_image_file(filepath)
-                        encodings = face_recognition.face_encodings(image)
-                        if encodings:
-                            known_face_encodings.append(encodings[0])
-                            known_face_names.append(name)
-                            print(f"[INFO] Loaded face encoding for: {name}")
-                        else:
-                            print(f"[WARNING] No face found in image: {filename}")
-                    except Exception as e:
-                        print(f"[ERROR] Failed to process face image {filename}: {e}")
-                else:
-                    img_gray = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
-                    if img_gray is not None:
-                        eq_gray = cv2.equalizeHist(img_gray)
-                        detected_faces = safe_detect_faces(eq_gray, scaleFactor=1.05, minNeighbors=3)
-                        if len(detected_faces) > 0:
-                            for (fx, fy, fw, fh) in detected_faces:
-                                face_roi = cv2.resize(eq_gray[fy:fy+fh, fx:fx+fw], (200, 200))
+    
+    class_faces_dir = get_known_faces_dir()
+    parent_faces_dir = os.path.join(CUSTOM_STORAGE_DIR, "known_faces")
+    
+    target_dirs = [class_faces_dir]
+    if os.path.exists(parent_faces_dir):
+        target_dirs.append(parent_faces_dir)
+
+    processed_files = set()
+
+    for target_dir in target_dirs:
+        if not os.path.exists(target_dir):
+            continue
+        for root, _, files in os.walk(target_dir):
+            for filename in files:
+                if filename.lower().endswith(valid_extensions):
+                    filepath = os.path.join(root, filename)
+                    if filepath in processed_files:
+                        continue
+                    processed_files.add(filepath)
+
+                    # Extract clean name from filename (e.g. '25410013_Karthik.jpg' -> 'Karthik')
+                    raw_stem = os.path.splitext(filename)[0]
+                    parts = raw_stem.split('_')
+                    if len(parts) > 1 and parts[0].isdigit():
+                        name = " ".join(parts[1:]).replace('_', ' ').title()
+                    else:
+                        name = raw_stem.replace('_', ' ').title()
+
+                    if HAVE_FACE_RECOGNITION:
+                        try:
+                            image = face_recognition.load_image_file(filepath)
+                            encodings = face_recognition.face_encodings(image)
+                            if encodings:
+                                known_face_encodings.append(encodings[0])
+                                known_face_names.append(name)
+                                print(f"[INFO] Loaded face encoding for: {name} ({filename})")
+                            else:
+                                print(f"[WARNING] No face found in image: {filename}")
+                        except Exception as e:
+                            print(f"[ERROR] Failed to process face image {filename}: {e}")
+                    else:
+                        img_gray = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
+                        if img_gray is not None:
+                            eq_gray = cv2.equalizeHist(img_gray)
+                            detected_faces = safe_detect_faces(eq_gray, scaleFactor=1.05, minNeighbors=2)
+                            if len(detected_faces) > 0:
+                                for (fx, fy, fw, fh) in detected_faces:
+                                    face_roi = cv2.resize(eq_gray[fy:fy+fh, fx:fx+fw], (200, 200))
+                                    faces_data.append(face_roi)
+                                    labels_data.append(idx)
+                            else:
+                                face_roi = cv2.resize(eq_gray, (200, 200))
                                 faces_data.append(face_roi)
                                 labels_data.append(idx)
-                        else:
-                            face_roi = cv2.resize(eq_gray, (200, 200))
-                            faces_data.append(face_roi)
-                            labels_data.append(idx)
 
-                        known_face_names.append(name)
-                        print(f"[INFO] Prepared LBPH training data for: {name}")
-                        idx += 1
+                            known_face_names.append(name)
+                            print(f"[INFO] Prepared LBPH training data for: {name} ({filename})")
+                            idx += 1
 
     if not HAVE_FACE_RECOGNITION and len(faces_data) > 0:
         try:
@@ -1113,19 +1142,26 @@ def register_face():
             file = request.files['file']
             valid_extensions = ('.jpg', '.jpeg', '.png')
             name_clean = name.replace(' ', '_')
+            roll_clean = roll_no.replace(' ', '_') if roll_no and roll_no != "-" else ""
             ext = os.path.splitext(file.filename)[1].lower()
             if ext not in valid_extensions:
                 ext = '.jpg'
 
-            filename_safe = f"{name_clean}{ext}"
+            if roll_clean:
+                filename_safe = f"{roll_clean}_{name_clean}{ext}"
+            else:
+                filename_safe = f"{name_clean}{ext}"
 
             if ALLOW_DISK_STORAGE:
                 faces_dir = get_known_faces_dir()
+                os.makedirs(faces_dir, exist_ok=True)
                 # Remove any existing photos for this student first to prevent duplicate extension files
                 for existing in os.listdir(faces_dir):
                     ext_check = os.path.splitext(existing)[1].lower()
                     if ext_check in valid_extensions:
-                        base_check = os.path.splitext(existing)[0].replace('_', ' ').title()
+                        raw_stem = os.path.splitext(existing)[0]
+                        parts = raw_stem.split('_')
+                        base_check = " ".join(parts[1:]).replace('_', ' ').title() if (len(parts) > 1 and parts[0].isdigit()) else raw_stem.replace('_', ' ').title()
                         if base_check.lower() == name.lower():
                             try:
                                 os.remove(os.path.join(faces_dir, existing))
