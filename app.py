@@ -259,10 +259,11 @@ lbph_trained = False
 face_cascade = None
 try:
     cascade_candidates = [
-        getattr(cv2.data, 'haarcascades', '') + 'haarcascade_frontalface_default.xml',
+        'haarcascade_frontalface_default.xml',
+        os.path.join(os.path.dirname(__file__), 'haarcascade_frontalface_default.xml'),
+        os.path.join(getattr(cv2, 'data', None).haarcascades, 'haarcascade_frontalface_default.xml') if hasattr(cv2, 'data') and hasattr(cv2.data, 'haarcascades') else '',
         '/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml',
-        '/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml',
-        'haarcascade_frontalface_default.xml'
+        '/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml'
     ]
     for c_path in cascade_candidates:
         if c_path and os.path.exists(c_path):
@@ -271,11 +272,6 @@ try:
                 face_cascade = cascade_obj
                 print(f"[INFO] Loaded OpenCV Haar Cascade from path: {c_path}")
                 break
-    if face_cascade is None and hasattr(cv2, 'CascadeClassifier') and hasattr(cv2, 'data'):
-        c_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        cascade_obj = cv2.CascadeClassifier(c_path)
-        if not cascade_obj.empty():
-            face_cascade = cascade_obj
 except Exception as cascade_err:
     print(f"[WARNING] Could not initialize OpenCV CascadeClassifier: {cascade_err}")
 
@@ -292,12 +288,12 @@ def safe_detect_faces(img_gray, scaleFactor=1.05, minNeighbors=2, minSize=None):
         else:
             faces = face_cascade.detectMultiScale(eq_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors)
         
-        # Fallback to raw grayscale if equalized pass misses
+        # Fallback to raw grayscale with minNeighbors=1 if equalized pass misses
         if len(faces) == 0:
             if minSize:
-                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.05, minNeighbors=2, minSize=minSize)
+                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.05, minNeighbors=1, minSize=minSize)
             else:
-                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.05, minNeighbors=2)
+                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.05, minNeighbors=1)
         return faces
     except Exception as err:
         print(f"[WARNING] Face detection cascade error: {err}")
