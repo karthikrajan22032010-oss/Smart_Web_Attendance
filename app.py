@@ -884,7 +884,12 @@ def get_attendance():
 
             unique_dates = df['Date'].unique().tolist()
             total_unique_days = max(1, len(unique_dates))
-            all_enrolled_list = sorted(list(set(known_face_names + roster_names)))
+            
+            if roster_names:
+                all_enrolled_list = sorted(list(set(roster_names)))
+            else:
+                all_enrolled_list = sorted(list(set(known_face_names)))
+
             all_known_names = sorted(list(set(df['Name'].tolist() + all_enrolled_list)))
 
             for person in all_known_names:
@@ -909,13 +914,16 @@ def get_attendance():
 
     roster_list = load_class_roster()
     roster_names = [item['name'] if isinstance(item, dict) else str(item) for item in roster_list]
-    all_enrolled_list = sorted(list(set(known_face_names + roster_names)))
+    if roster_names:
+        all_enrolled_list = sorted(list(set(roster_names)))
+    else:
+        all_enrolled_list = sorted(list(set(known_face_names)))
 
     total_count = len(logs)
     ontime_count = sum(1 for item in logs if str(item.get('Status')).strip() == 'On Time')
     late_count = sum(1 for item in logs if str(item.get('Status')).strip() == 'Late')
     od_count = sum(1 for item in logs if 'OD' in str(item.get('Status')).upper() or 'DUTY' in str(item.get('Status')).upper())
-    total_enrolled = max(len(all_enrolled_list), len(student_stats))
+    total_enrolled = len(all_enrolled_list)
     absent_count = max(0, total_enrolled - total_count)
 
     return jsonify({
