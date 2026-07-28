@@ -110,9 +110,13 @@ CLASS_ACCOUNTS = {
 
 def get_class_code():
     """Returns class code for current active session ('ECE2', 'ECE3', or default 'ECE2')."""
-    user_id = session.get('user_id', '')
-    if user_id in CLASS_ACCOUNTS:
-        return CLASS_ACCOUNTS[user_id].get('code', 'ECE2')
+    try:
+        user_id = session.get('user_id', '')
+        if user_id in CLASS_ACCOUNTS:
+            return CLASS_ACCOUNTS[user_id].get('code', 'ECE2')
+    except RuntimeError:
+        # Called outside of Flask HTTP request context (e.g. startup / background threads)
+        pass
     return 'ECE2'
 
 def ensure_csv_file(fpath):
