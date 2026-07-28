@@ -269,12 +269,12 @@ except Exception as cascade_err:
     print(f"[WARNING] Could not initialize OpenCV CascadeClassifier: {cascade_err}")
 
 
-def safe_detect_faces(img_gray, scaleFactor=1.08, minNeighbors=3, minSize=None):
-    """Safely runs Haar Cascade face detection with histogram equalization for contrast invariance."""
+def safe_detect_faces(img_gray, scaleFactor=1.05, minNeighbors=2, minSize=None):
+    """Safely runs Haar Cascade face detection with high sensitivity and histogram equalization."""
     if face_cascade is None or (hasattr(face_cascade, 'empty') and face_cascade.empty()):
         return []
     try:
-        # Equalize histogram for optimal lighting invariance
+        # Equalize histogram for optimal lighting & shadow invariance
         eq_gray = cv2.equalizeHist(img_gray)
         if minSize:
             faces = face_cascade.detectMultiScale(eq_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors, minSize=minSize)
@@ -284,9 +284,9 @@ def safe_detect_faces(img_gray, scaleFactor=1.08, minNeighbors=3, minSize=None):
         # Fallback to raw grayscale if equalized pass misses
         if len(faces) == 0:
             if minSize:
-                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.1, minNeighbors=3, minSize=minSize)
+                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.05, minNeighbors=2, minSize=minSize)
             else:
-                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.1, minNeighbors=3)
+                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.05, minNeighbors=2)
         return faces
     except Exception as err:
         print(f"[WARNING] Face detection cascade error: {err}")
@@ -558,7 +558,7 @@ def generate_frames():
                     current_names.append(name)
             else:
                 gray_small = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
-                faces = safe_detect_faces(gray_small, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+                faces = safe_detect_faces(gray_small, scaleFactor=1.05, minNeighbors=2, minSize=(20, 20))
                 
                 for (x, y, w, h) in faces:
                     top = y
@@ -684,19 +684,19 @@ def process_client_frame():
                 })
         else:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = safe_detect_faces(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+            faces = safe_detect_faces(gray, scaleFactor=1.05, minNeighbors=2, minSize=(20, 20))
             
             for (x, y, fw, fh) in faces:
-                name = "Unknown"
+                name = "Scanning Face..."
                 if lbph_trained and lbph_recognizer is not None:
                     eq_gray = cv2.equalizeHist(gray)
                     face_roi = cv2.resize(eq_gray[y:y+fh, x:x+fw], (200, 200))
                     label_id, confidence = lbph_recognizer.predict(face_roi)
-                    if confidence < 105 and 0 <= label_id < len(known_face_names):
+                    if confidence < 125 and 0 <= label_id < len(known_face_names):
                         name = known_face_names[label_id]
                         mark_attendance(name)
                     else:
-                        name = "Unknown"
+                        name = "Scanning Face..."
                 else:
                     name = "Face Detected" if len(known_face_names) == 0 else "Unknown"
 

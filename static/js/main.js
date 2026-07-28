@@ -219,6 +219,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (clientVideo) {
                     clientVideo.srcObject = clientMediaStream;
                     clientVideo.style.display = 'block';
+                    const clientCanvas = document.getElementById('clientCanvas');
+                    if (clientCanvas) clientCanvas.style.display = 'block';
                     await clientVideo.play();
                 }
 
@@ -280,6 +282,8 @@ document.addEventListener('DOMContentLoaded', () => {
             clientVideo.style.display = 'none';
             clientVideo.srcObject = null;
         }
+        const clientCanvas = document.getElementById('clientCanvas');
+        if (clientCanvas) clientCanvas.style.display = 'none';
 
         if (serverVideoImg) {
             serverVideoImg.style.display = 'none';
