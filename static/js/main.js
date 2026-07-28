@@ -324,9 +324,46 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ image: dataUrl })
                     });
                     const data = await res.json();
-                    if (data.success && data.faces && data.faces.length > 0) {
+                    if (data.success && data.faces) {
                         data.faces.forEach(f => {
-                            if (f.name && f.name !== 'Unknown') {
+                            const [bx, by, bw, bh] = f.box || [f.left, f.top, f.right - f.left, f.bottom - f.top];
+                            const isMatch = f.name && f.name !== 'Unknown' && f.name !== 'Face Detected';
+
+                            // Draw high-power AI targeting reticle
+                            ctx.strokeStyle = isMatch ? '#10B981' : '#38BDF8';
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(bx, by, bw, bh);
+
+                            // Draw glowing corners
+                            const cornerLen = Math.min(bw, bh) * 0.2;
+                            ctx.strokeStyle = isMatch ? '#34D399' : '#0EA5E9';
+                            ctx.lineWidth = 4;
+                            
+                            // Top-Left corner
+                            ctx.beginPath();
+                            ctx.moveTo(bx, by + cornerLen);
+                            ctx.lineTo(bx, by);
+                            ctx.lineTo(bx + cornerLen, by);
+                            ctx.stroke();
+
+                            // Top-Right corner
+                            ctx.beginPath();
+                            ctx.moveTo(bx + bw - cornerLen, by);
+                            ctx.lineTo(bx + bw, by);
+                            ctx.lineTo(bx + bw, by + cornerLen);
+                            ctx.stroke();
+
+                            // Label Badge
+                            const labelText = isMatch ? `MATCH: ${f.name}` : (f.name || 'SCANNING...');
+                            ctx.fillStyle = isMatch ? 'rgba(16, 185, 129, 0.9)' : 'rgba(14, 165, 233, 0.9)';
+                            const labelWidth = Math.max(120, ctx.measureText(labelText).width + 16);
+                            ctx.fillRect(bx, Math.max(0, by - 24), labelWidth, 22);
+
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.font = '700 12px Inter, sans-serif';
+                            ctx.fillText(labelText, bx + 6, Math.max(14, by - 8));
+
+                            if (isMatch) {
                                 fetchAttendanceData();
                             }
                         });
@@ -335,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error("Client frame post error:", err);
                 }
             }
-        }, 400);
+        }, 350);
     }
 
     function stopClientFrameProcessor() {

@@ -165,8 +165,8 @@ def save_class_roster(roster_list):
 
 # Ensure directories exist if disk storage is enabled
 if ALLOW_DISK_STORAGE:
-    os.makedirs(KNOWN_FACES_DIR, exist_ok=True)
-    os.makedirs(RECORDINGS_DIR, exist_ok=True)
+    get_known_faces_dir()
+    get_recordings_dir()
 
 # MongoDB Database Configuration
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
