@@ -193,8 +193,62 @@ try:
     USE_MONGO = True
     print(f"[INFO] Successfully connected to MongoDB Database: '{DB_NAME}'")
 except Exception as e:
-    print(f"[INFO] MongoDB connection notice ({e}). Operating with local CSV database fallback.")
+    print(f"[INFO] MongoDB connection notice ({e}). Operating with local CSV & SQLite database fallback.")
     USE_MONGO = False
+
+# SQLite Enterprise Database Configuration
+import sqlite3
+
+def get_db_path():
+    return os.path.join(CUSTOM_STORAGE_DIR, "smart_attendance.db")
+
+def init_sqlite_db():
+    """Initializes SQLite database tables for attendance, rosters, and activity logs."""
+    try:
+        db_path = get_db_path()
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Create Attendance Logs Table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS attendance_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                class_code TEXT NOT NULL,
+                name TEXT NOT NULL,
+                date TEXT NOT NULL,
+                in_time TEXT DEFAULT '-',
+                out_time TEXT DEFAULT '-',
+                status TEXT DEFAULT 'On Time',
+                morning_break TEXT DEFAULT '-',
+                lunch_break TEXT DEFAULT '-',
+                evening_break TEXT DEFAULT '-',
+                remarks TEXT DEFAULT '-',
+                updated_at TEXT,
+                UNIQUE(class_code, name, date)
+            )
+        ''')
+        
+        # Create Registered Students Table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS registered_students (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                class_code TEXT NOT NULL,
+                name TEXT NOT NULL,
+                roll_no TEXT DEFAULT '-',
+                photo TEXT,
+                registered_at TEXT,
+                UNIQUE(class_code, name)
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+        print(f"[INFO] Enterprise SQLite Database initialized: '{db_path}'")
+    except Exception as err:
+        print(f"[WARNING] SQLite init error: {err}")
+
+init_sqlite_db()
 
 # Shift & Break Timings Configuration (24-hour format HH:MM:SS)
 SHIFT_TIMINGS = {
@@ -391,8 +445,50 @@ def load_known_faces():
 load_known_faces()
 
 
+def sync_sqlite_attendance(data_dict):
+    """Syncs single attendance record to SQLite database."""
+    try:
+        db_path = get_db_path()
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        code = get_class_code()
+        
+        cursor.execute('''
+            INSERT INTO attendance_logs 
+            (class_code, name, date, in_time, out_time, status, morning_break, lunch_break, evening_break, remarks, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(class_code, name, date) DO UPDATE SET
+                in_time=excluded.in_time,
+                out_time=excluded.out_time,
+                status=excluded.status,
+                morning_break=excluded.morning_break,
+                lunch_break=excluded.lunch_break,
+                evening_break=excluded.evening_break,
+                remarks=excluded.remarks,
+                updated_at=excluded.updated_at
+        ''', (
+            code,
+            data_dict.get("Name", ""),
+            data_dict.get("Date", ""),
+            data_dict.get("In_Time", "-"),
+            data_dict.get("Out_Time", "-"),
+            data_dict.get("Status", "On Time"),
+            data_dict.get("Morning_Break", "-"),
+            data_dict.get("Lunch_Break", "-"),
+            data_dict.get("Evening_Break", "-"),
+            data_dict.get("Remarks", "-"),
+            get_current_now().strftime("%Y-%m-%d %H:%M:%S")
+        ))
+        
+        conn.commit()
+        conn.close()
+    except Exception as err:
+        print(f"[WARNING] SQLite Sync Error: {err}")
+
+
 def sync_mongo(data_dict):
-    """Syncs single attendance record dictionary to MongoDB with class isolation."""
+    """Syncs single attendance record dictionary to MongoDB & SQLite with class isolation."""
+    sync_sqlite_attendance(data_dict)
     if USE_MONGO and db is not None:
         try:
             code = get_class_code()
