@@ -1013,90 +1013,96 @@ def manual_entry():
 @app.route('/api/register_face', methods=['POST'])
 def register_face():
     """API to save student details (Name, Roll No) & reference face photo into class database & roster."""
-    name = request.form.get('name', '').strip()
-    roll_no = request.form.get('roll_no', '').strip() or "-"
+    try:
+        name = request.form.get('name', '').strip()
+        roll_no = request.form.get('roll_no', '').strip() or "-"
 
-    if not name:
-        return jsonify({"success": False, "message": "Student name is required!"}), 400
+        if not name:
+            return jsonify({"success": False, "message": "Student name is required!"}), 400
 
-    filename_safe = None
-    if 'file' in request.files and request.files['file'].filename != '':
-        file = request.files['file']
-        valid_extensions = ('.jpg', '.jpeg', '.png')
-        name_clean = name.replace(' ', '_')
-        ext = os.path.splitext(file.filename)[1].lower()
-        if ext not in valid_extensions:
-            ext = '.jpg'
+        filename_safe = None
+        if 'file' in request.files and request.files['file'].filename != '':
+            file = request.files['file']
+            valid_extensions = ('.jpg', '.jpeg', '.png')
+            name_clean = name.replace(' ', '_')
+            ext = os.path.splitext(file.filename)[1].lower()
+            if ext not in valid_extensions:
+                ext = '.jpg'
 
-        filename_safe = f"{name_clean}{ext}"
+            filename_safe = f"{name_clean}{ext}"
 
-        if ALLOW_DISK_STORAGE:
-            os.makedirs(KNOWN_FACES_DIR, exist_ok=True)
-            # Remove any existing photos for this student first to prevent duplicate extension files
-            for existing in os.listdir(KNOWN_FACES_DIR):
-                ext_check = os.path.splitext(existing)[1].lower()
-                if ext_check in valid_extensions:
-                    base_check = os.path.splitext(existing)[0].replace('_', ' ').title()
-                    if base_check.lower() == name.lower():
-                        try:
-                            os.remove(os.path.join(KNOWN_FACES_DIR, existing))
-                            print(f"[INFO] Replaced existing face photo: {existing}")
-                        except Exception:
-                            pass
+            if ALLOW_DISK_STORAGE:
+                os.makedirs(KNOWN_FACES_DIR, exist_ok=True)
+                # Remove any existing photos for this student first to prevent duplicate extension files
+                for existing in os.listdir(KNOWN_FACES_DIR):
+                    ext_check = os.path.splitext(existing)[1].lower()
+                    if ext_check in valid_extensions:
+                        base_check = os.path.splitext(existing)[0].replace('_', ' ').title()
+                        if base_check.lower() == name.lower():
+                            try:
+                                os.remove(os.path.join(KNOWN_FACES_DIR, existing))
+                                print(f"[INFO] Replaced existing face photo: {existing}")
+                            except Exception:
+                                pass
 
-            save_path = os.path.join(KNOWN_FACES_DIR, filename_safe)
-            # MICRO-STORAGE OPTIMIZATION: Compress image size (Max 350x350, JPEG Quality 65)
+                save_path = os.path.join(KNOWN_FACES_DIR, filename_safe)
+                # MICRO-STORAGE OPTIMIZATION: Compress image size (Max 350x350, JPEG Quality 65)
+                try:
+                    from PIL import Image
+                    file.seek(0)
+                    img = Image.open(file.stream)
+                    img.thumbnail((350, 350))
+                    if img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    img.save(save_path, "JPEG", quality=65, optimize=True)
+                    print(f"[MICRO-STORAGE] Saved compressed face photo ({os.path.getsize(save_path)} bytes): {save_path}")
+                except Exception as img_err:
+                    print(f"[WARNING] Image compression error ({img_err}), raw saving file: {save_path}")
+                    file.seek(0)
+                    file.save(save_path)
+                print(f"[INFO] New face registered: {save_path}")
+
+        # Sync into class roster
+        roster = load_class_roster()
+        found = False
+        for item in roster:
+            if isinstance(item, dict) and item.get('name', '').lower() == name.lower():
+                if filename_safe:
+                    item['photo'] = filename_safe
+                if roll_no and roll_no != "-":
+                    item['roll_no'] = roll_no
+                found = True
+                break
+
+        if not found:
+            roster.append({
+                "name": name,
+                "roll_no": roll_no,
+                "photo": filename_safe if filename_safe else None,
+                "added_at": get_current_now().strftime("%Y-%m-%d %I:%M %p")
+            })
+        save_class_roster(roster)
+
+        if USE_MONGO and db is not None:
             try:
-                from PIL import Image
-                img = Image.open(file.stream)
-                img.thumbnail((350, 350))
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
-                img.save(save_path, "JPEG", quality=65, optimize=True)
-                print(f"[MICRO-STORAGE] Saved compressed face photo ({os.path.getsize(save_path)} bytes): {save_path}")
-            except Exception as img_err:
-                print(f"[WARNING] Image compression error ({img_err}), raw saving file: {save_path}")
-                file.seek(0)
-                file.save(save_path)
-        print(f"[INFO] New face registered: {save_path}")
+                update_doc = {"name": name, "roll_no": roll_no, "registered_at": get_current_now()}
+                if filename_safe:
+                    update_doc["filename"] = filename_safe
+                db.registered_faces.update_one(
+                    {"name": name},
+                    {"$set": update_doc},
+                    upsert=True
+                )
+            except Exception as err:
+                print(f"[WARNING] MongoDB face register error: {err}")
 
-    # Sync into class roster
-    roster = load_class_roster()
-    found = False
-    for item in roster:
-        if isinstance(item, dict) and item.get('name', '').lower() == name.lower():
-            if filename_safe:
-                item['photo'] = filename_safe
-            if roll_no and roll_no != "-":
-                item['roll_no'] = roll_no
-            found = True
-            break
+        load_known_faces()
+        log_activity(f"Saved student details for {name} (Roll No: {roll_no}).", "success")
+        return jsonify({"success": True, "message": f"Successfully added {name} (Roll No: {roll_no}) to Student Name List!"})
 
-    if not found:
-        roster.append({
-            "name": name,
-            "roll_no": roll_no,
-            "photo": filename_safe if filename_safe else None,
-            "added_at": get_current_now().strftime("%Y-%m-%d %I:%M %p")
-        })
-    save_class_roster(roster)
-
-    if USE_MONGO and db is not None:
-        try:
-            update_doc = {"name": name, "roll_no": roll_no, "registered_at": get_current_now()}
-            if filename_safe:
-                update_doc["filename"] = filename_safe
-            db.registered_faces.update_one(
-                {"name": name},
-                {"$set": update_doc},
-                upsert=True
-            )
-        except Exception as err:
-            print(f"[WARNING] MongoDB face register error: {err}")
-
-    load_known_faces()
-    log_activity(f"Saved student details for {name} (Roll No: {roll_no}).", "success")
-    return jsonify({"success": True, "message": f"Successfully added {name} (Roll No: {roll_no}) to Student Name List!"})
+    except Exception as general_err:
+        print(f"[ERROR] register_face failed: {general_err}")
+        return jsonify({"success": False, "message": f"Error registering face photo: {str(general_err)}"}), 500
 
 
 @app.route('/api/delete_student', methods=['POST'])
