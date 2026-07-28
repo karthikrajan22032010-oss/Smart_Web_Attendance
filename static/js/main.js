@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error("Client frame post error:", err);
                 }
             }
-        }, 700);
+        }, 400);
     }
 
     function stopClientFrameProcessor() {

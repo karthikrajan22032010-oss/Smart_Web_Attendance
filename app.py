@@ -245,14 +245,25 @@ except Exception as cascade_err:
     print(f"[WARNING] Could not initialize OpenCV CascadeClassifier: {cascade_err}")
 
 
-def safe_detect_faces(img_gray, scaleFactor=1.1, minNeighbors=4, minSize=None):
-    """Safely runs Haar Cascade face detection with empty check and try-except error handling."""
+def safe_detect_faces(img_gray, scaleFactor=1.08, minNeighbors=3, minSize=None):
+    """Safely runs Haar Cascade face detection with histogram equalization for contrast invariance."""
     if face_cascade is None or (hasattr(face_cascade, 'empty') and face_cascade.empty()):
         return []
     try:
+        # Equalize histogram for optimal lighting invariance
+        eq_gray = cv2.equalizeHist(img_gray)
         if minSize:
-            return face_cascade.detectMultiScale(img_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors, minSize=minSize)
-        return face_cascade.detectMultiScale(img_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors)
+            faces = face_cascade.detectMultiScale(eq_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors, minSize=minSize)
+        else:
+            faces = face_cascade.detectMultiScale(eq_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors)
+        
+        # Fallback to raw grayscale if equalized pass misses
+        if len(faces) == 0:
+            if minSize:
+                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.1, minNeighbors=3, minSize=minSize)
+            else:
+                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.1, minNeighbors=3)
+        return faces
     except Exception as err:
         print(f"[WARNING] Face detection cascade error: {err}")
         return []
@@ -270,40 +281,42 @@ def load_known_faces():
 
     valid_extensions = ('.jpg', '.jpeg', '.png')
     idx = 0
-    for filename in os.listdir(KNOWN_FACES_DIR):
-        if filename.lower().endswith(valid_extensions):
-            name = os.path.splitext(filename)[0].replace('_', ' ').title()
-            filepath = os.path.join(KNOWN_FACES_DIR, filename)
-            
-            if HAVE_FACE_RECOGNITION:
-                try:
-                    image = face_recognition.load_image_file(filepath)
-                    encodings = face_recognition.face_encodings(image)
-                    if encodings:
-                        known_face_encodings.append(encodings[0])
-                        known_face_names.append(name)
-                        print(f"[INFO] Loaded face encoding for: {name}")
-                    else:
-                        print(f"[WARNING] No face found in image: {filename}")
-                except Exception as e:
-                    print(f"[ERROR] Failed to process face image {filename}: {e}")
-            else:
-                img_gray = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
-                if img_gray is not None:
-                    detected_faces = safe_detect_faces(img_gray, scaleFactor=1.1, minNeighbors=4)
-                    if len(detected_faces) > 0:
-                        for (fx, fy, fw, fh) in detected_faces:
-                            face_roi = cv2.resize(img_gray[fy:fy+fh, fx:fx+fw], (200, 200))
+    if os.path.exists(KNOWN_FACES_DIR):
+        for filename in os.listdir(KNOWN_FACES_DIR):
+            if filename.lower().endswith(valid_extensions):
+                name = os.path.splitext(filename)[0].replace('_', ' ').title()
+                filepath = os.path.join(KNOWN_FACES_DIR, filename)
+                
+                if HAVE_FACE_RECOGNITION:
+                    try:
+                        image = face_recognition.load_image_file(filepath)
+                        encodings = face_recognition.face_encodings(image)
+                        if encodings:
+                            known_face_encodings.append(encodings[0])
+                            known_face_names.append(name)
+                            print(f"[INFO] Loaded face encoding for: {name}")
+                        else:
+                            print(f"[WARNING] No face found in image: {filename}")
+                    except Exception as e:
+                        print(f"[ERROR] Failed to process face image {filename}: {e}")
+                else:
+                    img_gray = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
+                    if img_gray is not None:
+                        eq_gray = cv2.equalizeHist(img_gray)
+                        detected_faces = safe_detect_faces(eq_gray, scaleFactor=1.05, minNeighbors=3)
+                        if len(detected_faces) > 0:
+                            for (fx, fy, fw, fh) in detected_faces:
+                                face_roi = cv2.resize(eq_gray[fy:fy+fh, fx:fx+fw], (200, 200))
+                                faces_data.append(face_roi)
+                                labels_data.append(idx)
+                        else:
+                            face_roi = cv2.resize(eq_gray, (200, 200))
                             faces_data.append(face_roi)
                             labels_data.append(idx)
-                    else:
-                        face_roi = cv2.resize(img_gray, (200, 200))
-                        faces_data.append(face_roi)
-                        labels_data.append(idx)
 
-                    known_face_names.append(name)
-                    print(f"[INFO] Prepared LBPH training data for: {name}")
-                    idx += 1
+                        known_face_names.append(name)
+                        print(f"[INFO] Prepared LBPH training data for: {name}")
+                        idx += 1
 
     if not HAVE_FACE_RECOGNITION and len(faces_data) > 0:
         try:
@@ -531,9 +544,10 @@ def generate_frames():
                     
                     name = "Unknown"
                     if lbph_trained and lbph_recognizer is not None:
-                        face_roi = cv2.resize(gray_small[y:y+h, x:x+w], (200, 200))
+                        eq_gray = cv2.equalizeHist(gray_small)
+                        face_roi = cv2.resize(eq_gray[y:y+h, x:x+w], (200, 200))
                         label_id, confidence = lbph_recognizer.predict(face_roi)
-                        if confidence < 85 and 0 <= label_id < len(known_face_names):
+                        if confidence < 105 and 0 <= label_id < len(known_face_names):
                             name = known_face_names[label_id]
                             mark_attendance_throttled(name)
                         else:
@@ -650,9 +664,10 @@ def process_client_frame():
             for (x, y, fw, fh) in faces:
                 name = "Unknown"
                 if lbph_trained and lbph_recognizer is not None:
-                    face_roi = cv2.resize(gray[y:y+fh, x:x+fw], (200, 200))
+                    eq_gray = cv2.equalizeHist(gray)
+                    face_roi = cv2.resize(eq_gray[y:y+fh, x:x+fw], (200, 200))
                     label_id, confidence = lbph_recognizer.predict(face_roi)
-                    if confidence < 85 and 0 <= label_id < len(known_face_names):
+                    if confidence < 105 and 0 <= label_id < len(known_face_names):
                         name = known_face_names[label_id]
                         mark_attendance(name)
                     else:
