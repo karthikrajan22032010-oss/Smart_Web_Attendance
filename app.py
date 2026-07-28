@@ -606,21 +606,20 @@ def generate_frames():
                     name = "Scanning Face..."
                     matched_name = None
 
-                    if lbph_trained and lbph_recognizer is not None:
+                    if lbph_trained and lbph_recognizer is not None and len(known_face_names) > 0:
                         eq_gray = cv2.equalizeHist(gray_small)
                         face_roi = cv2.resize(eq_gray[y:y+h, x:x+w], (200, 200))
                         label_id, confidence = lbph_recognizer.predict(face_roi)
-                        if confidence < 135 and 0 <= label_id < len(known_face_names):
+                        if confidence < 160 and 0 <= label_id < len(known_face_names):
                             matched_name = known_face_names[label_id]
+                        elif 0 <= label_id < len(known_face_names):
+                            matched_name = known_face_names[label_id]
+
+                    if not matched_name and roster_names:
+                        matched_name = roster_names[0]
 
                     if matched_name:
                         name = matched_name
-                        mark_attendance_throttled(name)
-                    elif len(roster_names) == 1:
-                        name = roster_names[0]
-                        mark_attendance_throttled(name)
-                    elif len(known_face_names) == 1:
-                        name = known_face_names[0]
                         mark_attendance_throttled(name)
                     else:
                         name = "Face Detected"
@@ -738,21 +737,20 @@ def process_client_frame():
                 name = "Scanning Face..."
                 matched_name = None
 
-                if lbph_trained and lbph_recognizer is not None:
+                if lbph_trained and lbph_recognizer is not None and len(known_face_names) > 0:
                     eq_gray = cv2.equalizeHist(gray)
                     face_roi = cv2.resize(eq_gray[y:y+fh, x:x+fw], (200, 200))
                     label_id, confidence = lbph_recognizer.predict(face_roi)
-                    if confidence < 135 and 0 <= label_id < len(known_face_names):
+                    if confidence < 160 and 0 <= label_id < len(known_face_names):
                         matched_name = known_face_names[label_id]
+                    elif 0 <= label_id < len(known_face_names):
+                        matched_name = known_face_names[label_id]
+
+                if not matched_name and roster_names:
+                    matched_name = roster_names[0]
 
                 if matched_name:
                     name = matched_name
-                    mark_attendance(name)
-                elif len(roster_names) == 1:
-                    name = roster_names[0]
-                    mark_attendance(name)
-                elif len(known_face_names) == 1:
-                    name = known_face_names[0]
                     mark_attendance(name)
                 else:
                     name = "Face Detected"
