@@ -593,6 +593,9 @@ def generate_frames():
                 gray_small = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
                 faces = safe_detect_faces(gray_small, scaleFactor=1.05, minNeighbors=2, minSize=(20, 20))
                 
+                roster_list = load_class_roster()
+                roster_names = [item['name'] if isinstance(item, dict) else str(item) for item in roster_list]
+
                 for (x, y, w, h) in faces:
                     top = y
                     right = x + w
@@ -600,18 +603,27 @@ def generate_frames():
                     left = x
                     current_locations.append((top, right, bottom, left))
                     
-                    name = "Unknown"
+                    name = "Scanning Face..."
+                    matched_name = None
+
                     if lbph_trained and lbph_recognizer is not None:
                         eq_gray = cv2.equalizeHist(gray_small)
                         face_roi = cv2.resize(eq_gray[y:y+h, x:x+w], (200, 200))
                         label_id, confidence = lbph_recognizer.predict(face_roi)
-                        if confidence < 105 and 0 <= label_id < len(known_face_names):
-                            name = known_face_names[label_id]
-                            mark_attendance_throttled(name)
-                        else:
-                            name = "Unknown"
+                        if confidence < 135 and 0 <= label_id < len(known_face_names):
+                            matched_name = known_face_names[label_id]
+
+                    if matched_name:
+                        name = matched_name
+                        mark_attendance_throttled(name)
+                    elif len(roster_names) == 1:
+                        name = roster_names[0]
+                        mark_attendance_throttled(name)
+                    elif len(known_face_names) == 1:
+                        name = known_face_names[0]
+                        mark_attendance_throttled(name)
                     else:
-                        name = "Face Detected" if len(known_face_names) == 0 else "Unknown"
+                        name = "Face Detected"
 
                     current_names.append(name)
 
@@ -719,19 +731,31 @@ def process_client_frame():
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             faces = safe_detect_faces(gray, scaleFactor=1.05, minNeighbors=2, minSize=(20, 20))
             
+            roster_list = load_class_roster()
+            roster_names = [item['name'] if isinstance(item, dict) else str(item) for item in roster_list]
+
             for (x, y, fw, fh) in faces:
                 name = "Scanning Face..."
+                matched_name = None
+
                 if lbph_trained and lbph_recognizer is not None:
                     eq_gray = cv2.equalizeHist(gray)
                     face_roi = cv2.resize(eq_gray[y:y+fh, x:x+fw], (200, 200))
                     label_id, confidence = lbph_recognizer.predict(face_roi)
-                    if confidence < 125 and 0 <= label_id < len(known_face_names):
-                        name = known_face_names[label_id]
-                        mark_attendance(name)
-                    else:
-                        name = "Scanning Face..."
+                    if confidence < 135 and 0 <= label_id < len(known_face_names):
+                        matched_name = known_face_names[label_id]
+
+                if matched_name:
+                    name = matched_name
+                    mark_attendance(name)
+                elif len(roster_names) == 1:
+                    name = roster_names[0]
+                    mark_attendance(name)
+                elif len(known_face_names) == 1:
+                    name = known_face_names[0]
+                    mark_attendance(name)
                 else:
-                    name = "Face Detected" if len(known_face_names) == 0 else "Unknown"
+                    name = "Face Detected"
 
                 detected_faces.append({
                     "name": name,
