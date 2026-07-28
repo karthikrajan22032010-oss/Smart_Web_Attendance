@@ -390,7 +390,110 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeClassNameEl) activeClassNameEl.textContent = className || 'Classroom';
         fetchAttendanceData();
         startCamera();
+
+        // Prompt Computer Storage Location Modal right after login if not already shown
+        if (!localStorage.getItem('storage_mode_prompt_shown')) {
+            setTimeout(() => {
+                openStorageModal();
+            }, 600);
+        }
     }
+
+    // --- Computer Internal Storage Location Manager ---
+    const storageModal = document.getElementById('storageModal');
+    const btnOpenStorageModal = document.getElementById('btnOpenStorageModal');
+    const closeStorageModalBtn = document.getElementById('closeStorageModalBtn');
+    const cancelStorageBtn = document.getElementById('cancelStorageBtn');
+    const btnChooseDiskStorage = document.getElementById('btnChooseDiskStorage');
+    const btnChooseWebsiteOnly = document.getElementById('btnChooseWebsiteOnly');
+    const cardSelectDiskStorage = document.getElementById('cardSelectDiskStorage');
+    const cardSelectWebsiteOnly = document.getElementById('cardSelectWebsiteOnly');
+
+    const headerStorageIcon = document.getElementById('headerStorageIcon');
+    const headerStorageBadgeText = document.getElementById('headerStorageBadgeText');
+
+    function openStorageModal() {
+        if (storageModal) storageModal.classList.add('active');
+        highlightCurrentStorageCard();
+    }
+
+    function closeStorageModal() {
+        if (storageModal) storageModal.classList.remove('active');
+    }
+
+    function highlightCurrentStorageCard() {
+        const savedMode = localStorage.getItem('storage_mode') || 'internal_disk';
+        if (cardSelectDiskStorage && cardSelectWebsiteOnly) {
+            if (savedMode === 'internal_disk') {
+                cardSelectDiskStorage.style.borderColor = 'var(--primary)';
+                cardSelectDiskStorage.style.background = 'rgba(30, 41, 59, 0.85)';
+                cardSelectWebsiteOnly.style.borderColor = 'var(--border-color)';
+                cardSelectWebsiteOnly.style.background = 'rgba(30, 41, 59, 0.4)';
+            } else {
+                cardSelectWebsiteOnly.style.borderColor = 'var(--info)';
+                cardSelectWebsiteOnly.style.background = 'rgba(30, 41, 59, 0.85)';
+                cardSelectDiskStorage.style.borderColor = 'var(--border-color)';
+                cardSelectDiskStorage.style.background = 'rgba(30, 41, 59, 0.4)';
+            }
+        }
+    }
+
+    async function setStoragePreference(mode, isExplicit = true) {
+        localStorage.setItem('storage_mode', mode);
+        localStorage.setItem('storage_mode_prompt_shown', 'true');
+        highlightCurrentStorageCard();
+
+        try {
+            const res = await fetch('/api/storage_mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ storage_mode: mode })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                updateStorageBadgeUI(mode);
+                if (isExplicit) {
+                    if (mode === 'internal_disk') {
+                        showToast('📁 Computer Internal Storage Enabled! Files saved in compressed small format.', 'success');
+                    } else {
+                        showToast('🌐 Website Only Mode Enabled! No files created on computer internal storage.', 'info');
+                    }
+                    closeStorageModal();
+                }
+            }
+        } catch (err) {
+            console.error("Storage mode setting error:", err);
+        }
+    }
+
+    function updateStorageBadgeUI(mode) {
+        if (headerStorageBadgeText) {
+            if (mode === 'internal_disk') {
+                headerStorageBadgeText.textContent = 'Disk Storage (Small Files)';
+                if (headerStorageIcon) headerStorageIcon.className = 'fa-solid fa-hard-drive text-warning';
+            } else {
+                headerStorageBadgeText.textContent = 'Website Only (No Files)';
+                if (headerStorageIcon) headerStorageIcon.className = 'fa-solid fa-cloud text-info';
+            }
+        }
+    }
+
+    if (btnOpenStorageModal) btnOpenStorageModal.addEventListener('click', openStorageModal);
+    if (closeStorageModalBtn) closeStorageModalBtn.addEventListener('click', closeStorageModal);
+    if (cancelStorageBtn) cancelStorageBtn.addEventListener('click', closeStorageModal);
+
+    if (btnChooseDiskStorage) btnChooseDiskStorage.addEventListener('click', () => setStoragePreference('internal_disk'));
+    if (btnChooseWebsiteOnly) btnChooseWebsiteOnly.addEventListener('click', () => setStoragePreference('website_only'));
+    if (cardSelectDiskStorage) cardSelectDiskStorage.addEventListener('click', (e) => {
+        if (e.target.id !== 'btnChooseDiskStorage') setStoragePreference('internal_disk');
+    });
+    if (cardSelectWebsiteOnly) cardSelectWebsiteOnly.addEventListener('click', (e) => {
+        if (e.target.id !== 'btnChooseWebsiteOnly') setStoragePreference('website_only');
+    });
+
+    // Sync saved storage mode on app init
+    const initialStorageMode = localStorage.getItem('storage_mode') || 'internal_disk';
+    setStoragePreference(initialStorageMode, false);
 
     // Quick Class Chips
     const btnSelectClass0 = document.getElementById('btnSelectClass0');

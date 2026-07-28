@@ -120,6 +120,9 @@
                         <span class="clock-divider">•</span>
                         <span class="clock-str" id="liveClockStr">12:14:00 AM</span>
                     </div>
+                    <button class="btn btn-outline btn-xs btn-storage-mode" id="btnOpenStorageModal" title="Computer Storage Location Settings">
+                        <i class="fa-solid fa-hard-drive text-warning" id="headerStorageIcon"></i> <span id="headerStorageBadgeText">Computer Storage</span>
+                    </button>
                     <button class="btn btn-outline btn-xs btn-sync-time" id="btnOpenSyncTimeModal" title="Sync or Adjust Clock Time">
                         <i class="fa-solid fa-clock-rotate-left"></i> Sync Time
                     </button>
@@ -609,6 +612,69 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="cancelStatDetailBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 6: Computer Internal Storage Location Modal -->
+    <div class="modal-backdrop" id="storageModal">
+        <div class="modal-card" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-hard-drive text-warning"></i> Choose Storage Location Mode</h3>
+                <button class="close-btn" id="closeStorageModalBtn">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+                <p style="font-size: 14px; color: var(--text-main); margin: 0; line-height: 1.5;">
+                    Select where you would like to store attendance logs, registered student face photos, class roster, and surveillance video clips:
+                </p>
+
+                <div class="storage-options-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <!-- Option 1: Computer Internal Storage (YES) -->
+                    <div class="storage-card option-internal-disk" id="cardSelectDiskStorage" style="background: rgba(30, 41, 59, 0.7); border: 2px solid var(--primary); border-radius: 14px; padding: 16px; cursor: pointer; transition: all 0.25s ease; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-size: 26px; color: var(--primary); margin-bottom: 8px;">
+                                <i class="fa-solid fa-folder-plus"></i> <i class="fa-solid fa-hard-drive"></i>
+                            </div>
+                            <h4 style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 8px;">
+                                YES — Computer Internal Storage
+                            </h4>
+                            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin: 0;">
+                                Creates folders and saves files (`known_faces/`, `recorded_videos/`, `.csv`, `.json`) directly on your computer's internal storage.<br><br>
+                                <strong style="color: var(--success);"><i class="fa-solid fa-compress"></i> Micro-Storage Active:</strong> Every saved file is compressed to be <strong>EXTREMELY SMALL</strong> in size!
+                            </p>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" id="btnChooseDiskStorage" style="margin-top: 14px; width: 100%;">
+                            <i class="fa-solid fa-check"></i> YES - Save to Computer Storage
+                        </button>
+                    </div>
+
+                    <!-- Option 2: Website Only / Memory Storage (NO) -->
+                    <div class="storage-card option-website-only" id="cardSelectWebsiteOnly" style="background: rgba(30, 41, 59, 0.4); border: 2px solid var(--border-color); border-radius: 14px; padding: 16px; cursor: pointer; transition: all 0.25s ease; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-size: 26px; color: var(--info); margin-bottom: 8px;">
+                                <i class="fa-solid fa-cloud"></i> <i class="fa-solid fa-globe"></i>
+                            </div>
+                            <h4 style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 8px;">
+                                NO — Website Only (No Computer Files)
+                            </h4>
+                            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin: 0;">
+                                Do <strong>NOT</strong> create folders or save files to your computer internal disk.<br><br>
+                                Keeps attendance records in website session / browser memory / MongoDB database only.
+                            </p>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnChooseWebsiteOnly" style="margin-top: 14px; width: 100%;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> NO - Website Only (No Disk Files)
+                        </button>
+                    </div>
+                </div>
+
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-lightbulb text-warning" style="font-size: 18px;"></i>
+                    <span>You can change this storage preference anytime by clicking the <strong>Storage Badge</strong> in the top header bar.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelStorageBtn">Close</button>
             </div>
         </div>
     </div>

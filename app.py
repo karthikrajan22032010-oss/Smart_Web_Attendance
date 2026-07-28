@@ -105,29 +105,45 @@ def get_class_roster_path():
     code = get_class_code()
     return f"roster_{code}.json"
 
+# Computer Internal Storage vs Website Only Configurations
+ALLOW_DISK_STORAGE = True
+STORAGE_MODE = "internal_disk"
+in_memory_rosters = {}
+in_memory_attendance = {}
+
 def load_class_roster():
     """Loads student name list roster for active logged-in class account."""
+    code = get_class_code()
+    if code in in_memory_rosters and in_memory_rosters[code]:
+        return in_memory_rosters[code]
+
     rpath = get_class_roster_path()
-    if os.path.exists(rpath):
+    if ALLOW_DISK_STORAGE and os.path.exists(rpath):
         try:
             with open(rpath, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+                in_memory_rosters[code] = data
+                return data
         except Exception as e:
             print(f"[ERROR] Loading roster {rpath}: {e}")
-    return []
+    return in_memory_rosters.get(code, [])
 
 def save_class_roster(roster_list):
-    """Saves student roster list to class-isolated JSON file."""
-    rpath = get_class_roster_path()
-    try:
-        with open(rpath, 'w', encoding='utf-8') as f:
-            json.dump(roster_list, f, indent=2)
-    except Exception as e:
-        print(f"[ERROR] Saving roster {rpath}: {e}")
+    """Saves student roster list to class-isolated JSON file if disk storage allowed."""
+    code = get_class_code()
+    in_memory_rosters[code] = roster_list
+    if ALLOW_DISK_STORAGE:
+        rpath = get_class_roster_path()
+        try:
+            with open(rpath, 'w', encoding='utf-8') as f:
+                json.dump(roster_list, f, indent=2)
+        except Exception as e:
+            print(f"[ERROR] Saving roster {rpath}: {e}")
 
-# Ensure directories exist
-os.makedirs(KNOWN_FACES_DIR, exist_ok=True)
-os.makedirs(RECORDINGS_DIR, exist_ok=True)
+# Ensure directories exist if disk storage is enabled
+if ALLOW_DISK_STORAGE:
+    os.makedirs(KNOWN_FACES_DIR, exist_ok=True)
+    os.makedirs(RECORDINGS_DIR, exist_ok=True)
 
 # MongoDB Database Configuration
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
@@ -631,7 +647,36 @@ def process_client_frame():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
-# --- Time & Authentication Routes ---
+# --- Time, Storage & Authentication Routes ---
+
+@app.route('/api/storage_mode', methods=['GET', 'POST'])
+def handle_storage_mode():
+    """API to get or update storage mode (Computer Internal Storage vs Website Only)."""
+    global ALLOW_DISK_STORAGE, STORAGE_MODE
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        mode = data.get('storage_mode', 'internal_disk')
+        if mode == 'website_only':
+            STORAGE_MODE = "website_only"
+            ALLOW_DISK_STORAGE = False
+            log_activity("Storage mode set to WEBSITE ONLY (No Computer Disk Files).", "info")
+        else:
+            STORAGE_MODE = "internal_disk"
+            ALLOW_DISK_STORAGE = True
+            os.makedirs(KNOWN_FACES_DIR, exist_ok=True)
+            os.makedirs(RECORDINGS_DIR, exist_ok=True)
+            log_activity("Storage mode set to COMPUTER INTERNAL STORAGE (Micro-Compressed Files).", "success")
+        return jsonify({
+            "success": True,
+            "storage_mode": STORAGE_MODE,
+            "allow_disk": ALLOW_DISK_STORAGE,
+            "message": f"Storage mode set to {STORAGE_MODE}"
+        })
+    return jsonify({
+        "success": True,
+        "storage_mode": STORAGE_MODE,
+        "allow_disk": ALLOW_DISK_STORAGE
+    })
 
 @app.route('/api/time', methods=['GET'])
 def get_time_info():
@@ -977,8 +1022,11 @@ def register_face():
         if ext not in valid_extensions:
             ext = '.jpg'
 
-        # Remove any existing photos for this student first to prevent duplicate extension files (e.g. .jpeg and .png)
-        if os.path.exists(KNOWN_FACES_DIR):
+        filename_safe = f"{name_clean}{ext}"
+
+        if ALLOW_DISK_STORAGE:
+            os.makedirs(KNOWN_FACES_DIR, exist_ok=True)
+            # Remove any existing photos for this student first to prevent duplicate extension files
             for existing in os.listdir(KNOWN_FACES_DIR):
                 ext_check = os.path.splitext(existing)[1].lower()
                 if ext_check in valid_extensions:
@@ -990,9 +1038,20 @@ def register_face():
                         except Exception:
                             pass
 
-        filename_safe = f"{name_clean}{ext}"
-        save_path = os.path.join(KNOWN_FACES_DIR, filename_safe)
-        file.save(save_path)
+            save_path = os.path.join(KNOWN_FACES_DIR, filename_safe)
+            # MICRO-STORAGE OPTIMIZATION: Compress image size (Max 350x350, JPEG Quality 65)
+            try:
+                from PIL import Image
+                img = Image.open(file.stream)
+                img.thumbnail((350, 350))
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                img.save(save_path, "JPEG", quality=65, optimize=True)
+                print(f"[MICRO-STORAGE] Saved compressed face photo ({os.path.getsize(save_path)} bytes): {save_path}")
+            except Exception as img_err:
+                print(f"[WARNING] Image compression error ({img_err}), raw saving file: {save_path}")
+                file.seek(0)
+                file.save(save_path)
         print(f"[INFO] New face registered: {save_path}")
 
     # Sync into class roster
@@ -1341,9 +1400,11 @@ def export_excel():
 
 
 if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
     print("=========================================================")
     print("  Smart Face Recognition Attendance System Server Running  ")
     print(f"  MongoDB Database: {'Connected (' + DB_NAME + ')' if USE_MONGO else 'CSV Fallback Active'}")
-    print("  Local Access:  http://127.0.0.1:5000  ")
+    print(f"  Access URL:  http://0.0.0.0:{port}  ")
     print("=========================================================")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=False)
+
