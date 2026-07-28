@@ -221,7 +221,13 @@ lbph_recognizer = None
 lbph_trained = False
 
 # OpenCV Fallback Haar Cascade
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+face_cascade = None
+try:
+    if hasattr(cv2, 'CascadeClassifier') and hasattr(cv2, 'data'):
+        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        face_cascade = cv2.CascadeClassifier(cascade_path)
+except Exception as cascade_err:
+    print(f"[WARNING] Could not initialize OpenCV CascadeClassifier: {cascade_err}")
 
 
 def load_known_faces():
@@ -256,7 +262,7 @@ def load_known_faces():
             else:
                 img_gray = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
                 if img_gray is not None:
-                    detected_faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.1, minNeighbors=4)
+                    detected_faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.1, minNeighbors=4) if face_cascade is not None else []
                     if len(detected_faces) > 0:
                         for (fx, fy, fw, fh) in detected_faces:
                             face_roi = cv2.resize(img_gray[fy:fy+fh, fx:fx+fw], (200, 200))
@@ -486,7 +492,7 @@ def generate_frames():
                     current_names.append(name)
             else:
                 gray_small = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
-                faces = face_cascade.detectMultiScale(gray_small, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+                faces = face_cascade.detectMultiScale(gray_small, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)) if face_cascade is not None else []
                 
                 for (x, y, w, h) in faces:
                     top = y
@@ -611,7 +617,7 @@ def process_client_frame():
                 })
         else:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)) if face_cascade is not None else []
             
             for (x, y, fw, fh) in faces:
                 name = "Unknown"
