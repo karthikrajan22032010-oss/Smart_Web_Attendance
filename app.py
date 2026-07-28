@@ -276,24 +276,28 @@ except Exception as cascade_err:
     print(f"[WARNING] Could not initialize OpenCV CascadeClassifier: {cascade_err}")
 
 
-def safe_detect_faces(img_gray, scaleFactor=1.05, minNeighbors=2, minSize=None):
-    """Safely runs Haar Cascade face detection with high sensitivity and histogram equalization."""
+cascade_lock = threading.Lock()
+
+def safe_detect_faces(img_gray, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30)):
+    """Safely runs Haar Cascade face detection with thread locking and safe scale bounds."""
     if face_cascade is None or (hasattr(face_cascade, 'empty') and face_cascade.empty()):
         return []
     try:
         # Equalize histogram for optimal lighting & shadow invariance
         eq_gray = cv2.equalizeHist(img_gray)
-        if minSize:
-            faces = face_cascade.detectMultiScale(eq_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors, minSize=minSize)
-        else:
-            faces = face_cascade.detectMultiScale(eq_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors)
-        
-        # Fallback to raw grayscale with minNeighbors=1 if equalized pass misses
-        if len(faces) == 0:
+        with cascade_lock:
             if minSize:
-                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.05, minNeighbors=1, minSize=minSize)
+                faces = face_cascade.detectMultiScale(eq_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors, minSize=minSize)
             else:
-                faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.05, minNeighbors=1)
+                faces = face_cascade.detectMultiScale(eq_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors)
+        
+        # Fallback to raw grayscale if equalized pass misses
+        if len(faces) == 0:
+            with cascade_lock:
+                if minSize:
+                    faces = face_cascade.detectMultiScale(img_gray, scaleFactor=scaleFactor, minNeighbors=2, minSize=minSize)
+                else:
+                    faces = face_cascade.detectMultiScale(img_gray, scaleFactor=scaleFactor, minNeighbors=2)
         return faces
     except Exception as err:
         print(f"[WARNING] Face detection cascade error: {err}")
@@ -587,7 +591,7 @@ def generate_frames():
                     current_names.append(name)
             else:
                 gray_small = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
-                faces = safe_detect_faces(gray_small, scaleFactor=1.05, minNeighbors=2, minSize=(20, 20))
+                faces = safe_detect_faces(gray_small, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30))
                 
                 roster_list = load_class_roster()
                 roster_names = [item['name'] if isinstance(item, dict) else str(item) for item in roster_list]
@@ -724,7 +728,7 @@ def process_client_frame():
                 })
         else:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = safe_detect_faces(gray, scaleFactor=1.05, minNeighbors=2, minSize=(20, 20))
+            faces = safe_detect_faces(gray, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30))
             
             roster_list = load_class_roster()
             roster_names = [item['name'] if isinstance(item, dict) else str(item) for item in roster_list]
