@@ -220,14 +220,42 @@ known_face_names = []
 lbph_recognizer = None
 lbph_trained = False
 
-# OpenCV Fallback Haar Cascade
+# OpenCV Fallback Haar Cascade Loader
 face_cascade = None
 try:
-    if hasattr(cv2, 'CascadeClassifier') and hasattr(cv2, 'data'):
-        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        face_cascade = cv2.CascadeClassifier(cascade_path)
+    cascade_candidates = [
+        getattr(cv2.data, 'haarcascades', '') + 'haarcascade_frontalface_default.xml',
+        '/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml',
+        '/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml',
+        'haarcascade_frontalface_default.xml'
+    ]
+    for c_path in cascade_candidates:
+        if c_path and os.path.exists(c_path):
+            cascade_obj = cv2.CascadeClassifier(c_path)
+            if hasattr(cascade_obj, 'empty') and not cascade_obj.empty():
+                face_cascade = cascade_obj
+                print(f"[INFO] Loaded OpenCV Haar Cascade from path: {c_path}")
+                break
+    if face_cascade is None and hasattr(cv2, 'CascadeClassifier') and hasattr(cv2, 'data'):
+        c_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        cascade_obj = cv2.CascadeClassifier(c_path)
+        if not cascade_obj.empty():
+            face_cascade = cascade_obj
 except Exception as cascade_err:
     print(f"[WARNING] Could not initialize OpenCV CascadeClassifier: {cascade_err}")
+
+
+def safe_detect_faces(img_gray, scaleFactor=1.1, minNeighbors=4, minSize=None):
+    """Safely runs Haar Cascade face detection with empty check and try-except error handling."""
+    if face_cascade is None or (hasattr(face_cascade, 'empty') and face_cascade.empty()):
+        return []
+    try:
+        if minSize:
+            return face_cascade.detectMultiScale(img_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors, minSize=minSize)
+        return face_cascade.detectMultiScale(img_gray, scaleFactor=scaleFactor, minNeighbors=minNeighbors)
+    except Exception as err:
+        print(f"[WARNING] Face detection cascade error: {err}")
+        return []
 
 
 def load_known_faces():
@@ -262,7 +290,7 @@ def load_known_faces():
             else:
                 img_gray = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
                 if img_gray is not None:
-                    detected_faces = face_cascade.detectMultiScale(img_gray, scaleFactor=1.1, minNeighbors=4) if face_cascade is not None else []
+                    detected_faces = safe_detect_faces(img_gray, scaleFactor=1.1, minNeighbors=4)
                     if len(detected_faces) > 0:
                         for (fx, fy, fw, fh) in detected_faces:
                             face_roi = cv2.resize(img_gray[fy:fy+fh, fx:fx+fw], (200, 200))
@@ -492,7 +520,7 @@ def generate_frames():
                     current_names.append(name)
             else:
                 gray_small = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
-                faces = face_cascade.detectMultiScale(gray_small, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)) if face_cascade is not None else []
+                faces = safe_detect_faces(gray_small, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
                 
                 for (x, y, w, h) in faces:
                     top = y
@@ -617,7 +645,7 @@ def process_client_frame():
                 })
         else:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30)) if face_cascade is not None else []
+            faces = safe_detect_faces(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
             
             for (x, y, fw, fh) in faces:
                 name = "Unknown"
