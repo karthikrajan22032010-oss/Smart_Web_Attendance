@@ -25,9 +25,42 @@ except ImportError:
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "smart_attendance_secret_key_2026")
 
-# Configurations
-KNOWN_FACES_DIR = "known_faces"
-RECORDINGS_DIR = "recorded_videos"
+# Custom Computer Storage Folder Directory System
+CUSTOM_STORAGE_DIR = os.getenv("CUSTOM_STORAGE_DIR", "attendance_data")
+
+def get_storage_subfolder(subname):
+    """Returns absolute/relative path for a subfolder inside CUSTOM_STORAGE_DIR."""
+    folder_path = os.path.join(CUSTOM_STORAGE_DIR, subname)
+    if ALLOW_DISK_STORAGE:
+        try:
+            os.makedirs(folder_path, exist_ok=True)
+        except Exception as err:
+            print(f"[WARNING] Could not create storage directory {folder_path}: {err}")
+    return folder_path
+
+def get_known_faces_dir():
+    return get_storage_subfolder("known_faces")
+
+def get_recordings_dir():
+    return get_storage_subfolder("recorded_videos")
+
+def get_class_csv_path():
+    """Returns class-isolated CSV file path based on logged-in class account."""
+    code = get_class_code()
+    csv_dir = get_storage_subfolder("attendance_logs")
+    fpath = os.path.join(csv_dir, f"attendance_{code}.csv")
+    ensure_csv_file(fpath)
+    return fpath
+
+def get_class_roster_path():
+    """Returns class-isolated JSON student roster file path."""
+    code = get_class_code()
+    roster_dir = get_storage_subfolder("class_rosters")
+    return os.path.join(roster_dir, f"roster_{code}.json")
+
+# Computer Internal Storage vs Website Only Configurations
+ALLOW_DISK_STORAGE = True
+STORAGE_MODE = "internal_disk"
 
 # Clock Time Offset System (in minutes)
 TIME_OFFSET_MINUTES = 0
@@ -93,17 +126,7 @@ def ensure_csv_file(fpath):
         except Exception:
             pass
 
-def get_class_csv_path():
-    """Returns class-isolated CSV file path based on logged-in class account."""
-    code = get_class_code()
-    fpath = f"attendance_{code}.csv"
-    ensure_csv_file(fpath)
-    return fpath
 
-def get_class_roster_path():
-    """Returns class-isolated JSON student roster file path."""
-    code = get_class_code()
-    return f"roster_{code}.json"
 
 # Computer Internal Storage vs Website Only Configurations
 ALLOW_DISK_STORAGE = True
@@ -188,9 +211,10 @@ def auto_purge_old_recordings():
         try:
             now_sec = time.time()
             max_age_sec = 24 * 3600  # 24 hours
-            if os.path.exists(RECORDINGS_DIR):
-                for fname in os.listdir(RECORDINGS_DIR):
-                    fpath = os.path.join(RECORDINGS_DIR, fname)
+            rec_dir = get_recordings_dir()
+            if os.path.exists(rec_dir):
+                for fname in os.listdir(rec_dir):
+                    fpath = os.path.join(rec_dir, fname)
                     if os.path.isfile(fpath):
                         file_age = now_sec - os.path.getmtime(fpath)
                         if file_age > max_age_sec:
@@ -281,11 +305,12 @@ def load_known_faces():
 
     valid_extensions = ('.jpg', '.jpeg', '.png')
     idx = 0
-    if os.path.exists(KNOWN_FACES_DIR):
-        for filename in os.listdir(KNOWN_FACES_DIR):
+    faces_dir = get_known_faces_dir()
+    if os.path.exists(faces_dir):
+        for filename in os.listdir(faces_dir):
             if filename.lower().endswith(valid_extensions):
                 name = os.path.splitext(filename)[0].replace('_', ' ').title()
-                filepath = os.path.join(KNOWN_FACES_DIR, filename)
+                filepath = os.path.join(faces_dir, filename)
                 
                 if HAVE_FACE_RECOGNITION:
                     try:
@@ -700,11 +725,16 @@ def process_client_frame():
 
 @app.route('/api/storage_mode', methods=['GET', 'POST'])
 def handle_storage_mode():
-    """API to get or update storage mode (Computer Internal Storage vs Website Only)."""
-    global ALLOW_DISK_STORAGE, STORAGE_MODE
+    """API to get or update storage mode and custom computer folder path."""
+    global ALLOW_DISK_STORAGE, STORAGE_MODE, CUSTOM_STORAGE_DIR
     if request.method == 'POST':
         data = request.get_json() or {}
         mode = data.get('storage_mode', 'internal_disk')
+        custom_path = str(data.get('custom_path', '')).strip()
+
+        if custom_path:
+            CUSTOM_STORAGE_DIR = custom_path
+
         if mode == 'website_only':
             STORAGE_MODE = "website_only"
             ALLOW_DISK_STORAGE = False
@@ -712,19 +742,25 @@ def handle_storage_mode():
         else:
             STORAGE_MODE = "internal_disk"
             ALLOW_DISK_STORAGE = True
-            os.makedirs(KNOWN_FACES_DIR, exist_ok=True)
-            os.makedirs(RECORDINGS_DIR, exist_ok=True)
-            log_activity("Storage mode set to COMPUTER INTERNAL STORAGE (Micro-Compressed Files).", "success")
+            # Automatically create organized subfolders inside custom computer storage folder
+            get_known_faces_dir()
+            get_recordings_dir()
+            get_storage_subfolder("attendance_logs")
+            get_storage_subfolder("class_rosters")
+            log_activity(f"Storage mode set to COMPUTER STORAGE inside folder: '{CUSTOM_STORAGE_DIR}'", "success")
+
         return jsonify({
             "success": True,
             "storage_mode": STORAGE_MODE,
             "allow_disk": ALLOW_DISK_STORAGE,
-            "message": f"Storage mode set to {STORAGE_MODE}"
+            "custom_path": CUSTOM_STORAGE_DIR,
+            "message": f"Storage directory set to {CUSTOM_STORAGE_DIR}"
         })
     return jsonify({
         "success": True,
         "storage_mode": STORAGE_MODE,
-        "allow_disk": ALLOW_DISK_STORAGE
+        "allow_disk": ALLOW_DISK_STORAGE,
+        "custom_path": CUSTOM_STORAGE_DIR
     })
 
 @app.route('/api/time', methods=['GET'])
@@ -1002,10 +1038,11 @@ def get_recordings():
     """API returning list of recorded video files (auto-deleted after 24 hours)."""
     video_files = []
     now_sec = time.time()
-    if os.path.exists(RECORDINGS_DIR):
-        for fname in os.listdir(RECORDINGS_DIR):
+    rec_dir = get_recordings_dir()
+    if os.path.exists(rec_dir):
+        for fname in os.listdir(rec_dir):
             if fname.lower().endswith(('.mp4', '.avi', '.webm')):
-                fpath = os.path.join(RECORDINGS_DIR, fname)
+                fpath = os.path.join(rec_dir, fname)
                 mtime = os.path.getmtime(fpath)
                 size_mb = round(os.path.getsize(fpath) / (1024 * 1024), 2)
                 age_hours = round((now_sec - mtime) / 3600, 1)
@@ -1024,7 +1061,7 @@ def get_recordings():
 @app.route('/recordings/<path:filename>')
 def serve_recording(filename):
     """Serves recorded video files to the browser."""
-    return send_from_directory(RECORDINGS_DIR, filename)
+    return send_from_directory(get_recordings_dir(), filename)
 
 
 @app.route('/api/manual_entry', methods=['POST'])
@@ -1083,20 +1120,20 @@ def register_face():
             filename_safe = f"{name_clean}{ext}"
 
             if ALLOW_DISK_STORAGE:
-                os.makedirs(KNOWN_FACES_DIR, exist_ok=True)
+                faces_dir = get_known_faces_dir()
                 # Remove any existing photos for this student first to prevent duplicate extension files
-                for existing in os.listdir(KNOWN_FACES_DIR):
+                for existing in os.listdir(faces_dir):
                     ext_check = os.path.splitext(existing)[1].lower()
                     if ext_check in valid_extensions:
                         base_check = os.path.splitext(existing)[0].replace('_', ' ').title()
                         if base_check.lower() == name.lower():
                             try:
-                                os.remove(os.path.join(KNOWN_FACES_DIR, existing))
+                                os.remove(os.path.join(faces_dir, existing))
                                 print(f"[INFO] Replaced existing face photo: {existing}")
                             except Exception:
                                 pass
 
-                save_path = os.path.join(KNOWN_FACES_DIR, filename_safe)
+                save_path = os.path.join(faces_dir, filename_safe)
                 # MICRO-STORAGE OPTIMIZATION: Compress image size (Max 350x350, JPEG Quality 65)
                 try:
                     from PIL import Image
@@ -1169,12 +1206,13 @@ def delete_student():
     valid_extensions = ('.jpg', '.jpeg', '.png')
     
     # 1. Delete ALL face photo extensions for this student from known_faces directory
-    if os.path.exists(KNOWN_FACES_DIR):
-        for filename in os.listdir(KNOWN_FACES_DIR):
+    faces_dir = get_known_faces_dir()
+    if os.path.exists(faces_dir):
+        for filename in os.listdir(faces_dir):
             if filename.lower().endswith(valid_extensions):
                 fname_no_ext = os.path.splitext(filename)[0].replace('_', ' ').title()
                 if fname_no_ext.lower() == name.lower():
-                    fpath = os.path.join(KNOWN_FACES_DIR, filename)
+                    fpath = os.path.join(faces_dir, filename)
                     try:
                         os.remove(fpath)
                         deleted_photo = True

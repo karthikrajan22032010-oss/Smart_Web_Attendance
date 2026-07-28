@@ -443,18 +443,24 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('storage_mode_prompt_shown', 'true');
         highlightCurrentStorageCard();
 
+        const customPathInput = document.getElementById('customFolderPathInput');
+        const custom_path = customPathInput ? customPathInput.value.trim() : 'attendance_data';
+        if (custom_path) {
+            localStorage.setItem('custom_storage_path', custom_path);
+        }
+
         try {
             const res = await fetch('/api/storage_mode', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ storage_mode: mode })
+                body: JSON.stringify({ storage_mode: mode, custom_path: custom_path })
             });
             const data = await res.json();
             if (res.ok && data.success) {
-                updateStorageBadgeUI(mode);
+                updateStorageBadgeUI(mode, data.custom_path || custom_path);
                 if (isExplicit) {
                     if (mode === 'internal_disk') {
-                        showToast('📁 Computer Internal Storage Enabled! Files saved in compressed small format.', 'success');
+                        showToast(`📁 Computer Folder set to '${data.custom_path || custom_path}'! Subfolders automatically created & organized.`, 'success');
                     } else {
                         showToast('🌐 Website Only Mode Enabled! No files created on computer internal storage.', 'info');
                     }
@@ -466,16 +472,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateStorageBadgeUI(mode) {
+    function updateStorageBadgeUI(mode, path = 'attendance_data') {
         if (headerStorageBadgeText) {
             if (mode === 'internal_disk') {
-                headerStorageBadgeText.textContent = 'Disk Storage (Small Files)';
-                if (headerStorageIcon) headerStorageIcon.className = 'fa-solid fa-hard-drive text-warning';
+                headerStorageBadgeText.textContent = `Folder: ${path}`;
+                if (headerStorageIcon) headerStorageIcon.className = 'fa-solid fa-folder-tree text-warning';
             } else {
                 headerStorageBadgeText.textContent = 'Website Only (No Files)';
                 if (headerStorageIcon) headerStorageIcon.className = 'fa-solid fa-cloud text-info';
             }
         }
+    }
+
+    const btnApplyCustomFolder = document.getElementById('btnApplyCustomFolder');
+    if (btnApplyCustomFolder) {
+        btnApplyCustomFolder.addEventListener('click', () => {
+            setStoragePreference('internal_disk', true);
+        });
     }
 
     if (btnOpenStorageModal) btnOpenStorageModal.addEventListener('click', openStorageModal);
