@@ -702,6 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let loginCooldownTimer = null;
     let cooldownSecondsLeft = 0;
+    let failedLoginAttempts = 0;
 
     function triggerLoginError(msg, errorType) {
         if (loginIdInput) loginIdInput.classList.remove('input-error');
@@ -739,13 +740,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (loginErrorMsg && cooldownSecondsLeft > 0) {
-                loginErrorMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Wrong Login ID or Password!</strong><br><small style="color: var(--danger);">Security Cooldown Active: <strong>${cooldownSecondsLeft} seconds</strong> remaining.</small>`;
+                loginErrorMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Too many failed attempts!</strong><br><small style="color: var(--danger);">Security Lock Active: Please wait <strong>${cooldownSecondsLeft} seconds</strong> before trying again.</small>`;
                 loginErrorMsg.style.display = 'block';
             }
 
             if (cooldownSecondsLeft <= 0) {
                 clearInterval(loginCooldownTimer);
                 loginCooldownTimer = null;
+                failedLoginAttempts = 0;
                 if (btnSubmit) {
                     btnSubmit.disabled = false;
                     btnSubmit.classList.remove('btn-locked');
@@ -783,14 +785,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const data = await res.json();
                 if (res.ok && data.success) {
+                    failedLoginAttempts = 0;
                     if (loginIdInput) loginIdInput.classList.remove('input-error');
                     if (loginPassInput) loginPassInput.classList.remove('input-error');
                     if (loginErrorMsg) loginErrorMsg.style.display = 'none';
                     showToast(data.message || 'Login Successful!', 'success');
                     showDashboard(data.class_name);
                 } else {
-                    triggerLoginError(data.message || 'Invalid Login ID or Password!', data.error_type || 'password');
-                    showToast(data.message || 'Invalid Login Credentials', 'danger');
+                    failedLoginAttempts++;
+                    if (failedLoginAttempts >= 2) {
+                        triggerLoginError('Too many failed attempts! Security lock active.', 'password');
+                        showToast('Too many failed attempts! 60s cooldown initiated.', 'danger');
+                        startLoginCooldown(60);
+                    } else {
+                        triggerLoginError('Your ID and password are wrong.', data.error_type || 'password');
+                        showToast('Your ID and password are wrong.', 'danger');
+                    }
                 }
             } catch (err) {
                 showToast('Server connection error during login.', 'danger');

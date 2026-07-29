@@ -1107,7 +1107,7 @@ def login():
         return jsonify({
             "success": False,
             "error_type": "id",
-            "message": f"❌ Class Login ID '{login_id}' is Invalid! Try 'CLASS 1' with password '123456789'."
+            "message": "Your ID and password are wrong."
         }), 401
 
     if account['password'] != password:
@@ -1115,7 +1115,7 @@ def login():
         return jsonify({
             "success": False,
             "error_type": "password",
-            "message": f"❌ Password for '{matched_id}' is Incorrect! Try password '123456789'."
+            "message": "Your ID and password are wrong."
         }), 401
 
     session['user_id'] = matched_id
