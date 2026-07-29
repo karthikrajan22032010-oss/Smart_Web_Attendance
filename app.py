@@ -1082,10 +1082,7 @@ def login():
 
     # Alias shortcuts matching
     if not account:
-        if clean_id in ["1", "CLASS1", "CLASS1@LAPC", "CLASS1YEAR"]:
-            matched_id = "CLASS 1"
-            account = CLASS_ACCOUNTS.get("CLASS 1")
-        elif clean_id in ["2", "ECE2", "ECE2YEAR", "ECE2NDYEAR", "ECE2YEAR@LAPC"]:
+        if clean_id in ["2", "ECE2", "ECE2YEAR", "ECE2NDYEAR", "ECE2YEAR@LAPC"]:
             matched_id = "ECE 2YEAR@LAPC"
             account = CLASS_ACCOUNTS.get("ECE 2YEAR@LAPC")
         elif clean_id in ["3", "ECE3", "ECE3YEAR", "ECE3RDYEAR", "ECE3YEAR@LAPC"]:
@@ -1094,7 +1091,7 @@ def login():
 
     # Universal Fallback Account creation for custom Class IDs with password 123456789
     if not account and password == "123456789":
-        code_clean = "".join(c for c in clean_id if c.isalnum()) or "CLASS1"
+        code_clean = "".join(c for c in clean_id if c.isalnum()) or "CLASS"
         matched_id = login_id
         account = {
             "password": "123456789",
