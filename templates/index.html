@@ -10,37 +10,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Three.js 3D WebGL Engine -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <!-- 3D Background Particles Mesh -->
-    <div class="bg-3d-particles" id="particlesBg"></div>
-
-    <!-- 1. CLASS LOGIN SECTION (3D GLASSMORPHISM UI) -->
+    <!-- 1. CLASS LOGIN SECTION (GLASSMORPHISM UI) -->
     <div class="login-container" id="loginSection">
         <div class="login-card-3d tilt-card">
             <div class="login-header">
                 <div class="logo-3d-wrapper">
                     <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Smart Attendance 3D Logo" class="logo-3d-img">
                 </div>
-                <h2>Classroom Portal Login</h2>
+                <h2 id="authPortalTitle">Classroom Portal Login</h2>
                 <p>Smart Face Recognition & Classroom Attendance System</p>
             </div>
 
             <!-- Login Form -->
             <form id="loginForm" class="login-form">
-                <div class="quick-class-selection" style="margin-bottom: 14px;">
-                    <span class="quick-title" style="font-weight: 600; font-size: 13px; color: var(--text-muted);"><i class="fa-solid fa-bolt text-warning"></i> Click Quick Login Preset:</span>
-                    <div class="class-chips" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
-                        <button type="button" class="chip-btn" id="btnSelectClass0"><i class="fa-solid fa-graduation-cap text-primary"></i> CLASS 1</button>
-                        <button type="button" class="chip-btn" id="btnSelectClass1"><i class="fa-solid fa-graduation-cap text-success"></i> ECE 2nd Year</button>
-                        <button type="button" class="chip-btn" id="btnSelectClass2"><i class="fa-solid fa-graduation-cap text-info"></i> ECE 3rd Year</button>
-                    </div>
-                </div>
-
                 <div class="form-group">
                     <label for="loginId"><i class="fa-solid fa-user-shield"></i> Class Login ID</label>
                     <div class="input-icon-wrapper">
@@ -65,6 +51,12 @@
                 <button type="submit" class="btn btn-login-3d" id="btnLoginSubmit">
                     <span>Login to Classroom Dashboard</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
                 </button>
+
+                <div style="text-align: center; margin-top: 14px;">
+                    <button type="button" class="btn btn-outline btn-xs" id="btnOpenRegModal" style="border: 1px solid var(--primary); color: var(--primary);">
+                        <i class="fa-solid fa-user-plus"></i> Register New Class Account
+                    </button>
+                </div>
             </form>
 
             <div class="login-footer">
@@ -72,6 +64,40 @@
                     <i class="fa-solid fa-code text-primary"></i> Designed & Developed by <strong>MAYANDI KARTHIK RAJAN</strong>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal 7: Register New Class Account Modal -->
+    <div class="modal-backdrop" id="regModal">
+        <div class="modal-card" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-plus text-success"></i> Register New Class Account</h3>
+                <button class="close-btn" id="closeRegModalBtn">&times;</button>
+            </div>
+            <form id="regModalForm">
+                <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+                    <div class="form-group">
+                        <label for="regModalId"><i class="fa-solid fa-id-card"></i> New Class / User Login ID</label>
+                        <input type="text" id="regModalId" placeholder="e.g. ECE 4YEAR@LAPC or MECH 1" required style="width: 100%; background: rgba(15, 23, 42, 0.85); color: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 13px;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="regModalName"><i class="fa-solid fa-graduation-cap"></i> Class Name / Department</label>
+                        <input type="text" id="regModalName" placeholder="e.g. ECE 4th Year (LAPC)" required style="width: 100%; background: rgba(15, 23, 42, 0.85); color: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 13px;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="regModalPass"><i class="fa-solid fa-lock"></i> Set Password</label>
+                        <input type="password" id="regModalPass" placeholder="Enter class password" required style="width: 100%; background: rgba(15, 23, 42, 0.85); color: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 13px;">
+                    </div>
+
+                    <div id="regModalErrorMsg" style="display: none; color: var(--danger); font-size: 12px; font-weight: 600;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelRegModalBtn">Cancel</button>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Create Class Account</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -668,25 +694,60 @@
                     </div>
                 </div>
 
-                <!-- Custom Computer Storage Folder Directory Selection -->
-                <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 16px;">
-                    <label for="customFolderPathInput" style="font-weight: 700; font-size: 13px; color: var(--primary); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                        <i class="fa-solid fa-folder-tree text-warning"></i> Select / Type Custom Computer Folder Path:
-                    </label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="customFolderPathInput" value="attendance_data" placeholder="e.g. D:/Attendance_Data or ./attendance_data" style="flex: 1; background: rgba(15, 23, 42, 0.85); color: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none;">
-                        <button type="button" class="btn btn-primary btn-sm" id="btnApplyCustomFolder" style="white-space: nowrap;">
-                            <i class="fa-solid fa-folder-check"></i> Save & Organize Folder
+                <!-- Quick 1-Click Computer Drive Selector & Dropdown -->
+                <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid var(--primary); border-radius: 14px; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="driveSelectDropdown" style="font-weight: 700; font-size: 14px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-hard-drive text-warning" style="font-size: 16px;"></i> Select PC Storage Drive:
+                        </label>
+                        <span class="badge badge-success" style="font-size: 11px;"><i class="fa-solid fa-check-double"></i> All Files Auto-Saved</span>
+                    </div>
+
+                    <!-- Drive Dropdown Selector -->
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                        <select id="driveSelectDropdown" style="flex: 1; background: rgba(15, 23, 42, 0.95); color: var(--text-main); border: 1px solid var(--primary); border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer; outline: none;">
+                            <option value="D:/Attendance_Data">💾 New Volume (D:) &rarr; D:/Attendance_Data</option>
+                            <option value="C:/Attendance_Data">💾 Windows (C:) &rarr; C:/Attendance_Data</option>
+                            <option value="E:/Attendance_Data">💾 New Volume (E:) &rarr; E:/Attendance_Data</option>
+                            <option value="G:/Attendance_Data">☁️ Google Drive (G:) &rarr; G:/Attendance_Data</option>
+                            <option value="custom">📁 Custom Folder Directory...</option>
+                        </select>
+                        <input type="file" id="folderPickerInput" webkitdirectory directory style="display: none;">
+                        <button type="button" class="btn btn-outline btn-sm" id="btnBrowseFolder" style="border: 1px solid var(--warning); color: var(--warning); padding: 9px 14px;">
+                            <i class="fa-solid fa-folder-open"></i> Browse Folder on PC
                         </button>
                     </div>
-                    <small style="color: var(--text-muted); font-size: 11px; margin-top: 6px; display: block;">
-                        📁 All face photos, video clips, CSV logs & rosters will be <strong>automatically organized</strong> into subfolders inside this custom directory!
-                    </small>
+
+                    <!-- Drive Preset Quick Chips -->
+                    <div id="pcDriveChips" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px;">
+                        <button type="button" class="chip-btn drive-chip" data-path="D:/Attendance_Data"><i class="fa-solid fa-hard-drive text-success"></i> Drive D:</button>
+                        <button type="button" class="chip-btn drive-chip" data-path="C:/Attendance_Data"><i class="fa-solid fa-hard-drive text-primary"></i> Drive C:</button>
+                        <button type="button" class="chip-btn drive-chip" data-path="E:/Attendance_Data"><i class="fa-solid fa-hard-drive text-info"></i> Drive E:</button>
+                        <button type="button" class="chip-btn drive-chip" data-path="G:/Attendance_Data"><i class="fa-solid fa-cloud text-warning"></i> Drive G:</button>
+                    </div>
+
+                    <!-- Custom Path Text Input -->
+                    <div>
+                        <label for="customFolderPathInput" style="font-weight: 600; font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">
+                            <i class="fa-solid fa-folder-tree"></i> Active Computer Folder Path:
+                        </label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="customFolderPathInput" value="attendance_data" placeholder="e.g. D:/Attendance_Data or E:/Attendance_Data" style="flex: 1; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none;">
+                            <button type="button" class="btn btn-primary btn-sm" id="btnApplyCustomFolder" style="white-space: nowrap;">
+                                <i class="fa-solid fa-folder-check"></i> Grant Permission & Save to PC Drive
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 8px 12px; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; font-size: 11px; color: var(--success); display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-shield-check" style="font-size: 14px;"></i>
+                        <span><strong>PC Storage Active:</strong> CSV attendance logs, roster JSONs, SQLite database & photos auto-save to this drive.</span>
+                    </div>
                 </div>
 
                 <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
                     <i class="fa-solid fa-lightbulb text-warning" style="font-size: 18px;"></i>
-                    <span>You can change this storage preference anytime by clicking the <strong>Storage Badge</strong> in the top header bar.</span>
+                    <span>You can change this storage drive preference anytime by clicking the <strong>Storage Badge</strong> in the top header bar.</span>
                 </div>
             </div>
             <div class="modal-footer">

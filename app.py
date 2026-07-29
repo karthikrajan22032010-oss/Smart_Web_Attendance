@@ -1,5 +1,12 @@
 import os
+os.environ["OPENCV_LOG_LEVEL"] = "OFF"
+os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "0"
 import cv2
+if hasattr(cv2, 'setLogLevel'):
+    try:
+        cv2.setLogLevel(0)
+    except Exception:
+        pass
 import csv
 import json
 import time
@@ -81,21 +88,6 @@ def get_current_now():
 
 # Class Account Credentials
 CLASS_ACCOUNTS = {
-    "CLASS 1": {
-        "password": "123456789",
-        "class_name": "Class 1 (LAPC)",
-        "code": "CLASS1"
-    },
-    "CLASS 1@LAPC": {
-        "password": "123456789",
-        "class_name": "Class 1 (LAPC)",
-        "code": "CLASS1"
-    },
-    "CLASS1": {
-        "password": "123456789",
-        "class_name": "Class 1 (LAPC)",
-        "code": "CLASS1"
-    },
     "ECE 2YEAR@LAPC": {
         "password": "123456789",
         "class_name": "ECE 2nd Year (LAPC)",
@@ -199,13 +191,16 @@ except Exception as e:
 # SQLite Enterprise Database Configuration
 import sqlite3
 
-def get_db_path():
-    return os.path.join(CUSTOM_STORAGE_DIR, "smart_attendance.db")
+def get_db_path(class_code=None):
+    code = class_code if class_code else get_class_code()
+    db_dir = get_storage_subfolder("databases")
+    return os.path.join(db_dir, f"smart_attendance_{code}.db")
 
-def init_sqlite_db():
-    """Initializes SQLite database tables for attendance, rosters, and activity logs."""
+def init_sqlite_db(class_code=None):
+    """Initializes dedicated SQLite database tables for each class ID."""
     try:
-        db_path = get_db_path()
+        code = class_code if class_code else get_class_code()
+        db_path = get_db_path(code)
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
@@ -244,7 +239,7 @@ def init_sqlite_db():
         
         conn.commit()
         conn.close()
-        print(f"[INFO] Enterprise SQLite Database initialized: '{db_path}'")
+        print(f"[INFO] Enterprise SQLite Database initialized for [{code}]: '{db_path}'")
     except Exception as err:
         print(f"[WARNING] SQLite init error: {err}")
 
@@ -638,14 +633,18 @@ def generate_frames():
     camera = cv2.VideoCapture(0)
     
     if not camera.isOpened():
-        print("[ERROR] Could not access local webcam (device 0).")
+        print("[INFO] Server host PC camera (device 0) unavailable. Using client browser camera mode.")
         blank_frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        cv2.putText(blank_frame, "Webcam Not Found / Access Denied", (60, 240),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        cv2.putText(blank_frame, "Host PC Camera Unavailable", (120, 220),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 165, 255), 2)
+        cv2.putText(blank_frame, "Using Browser/Device Camera Mode", (110, 260),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
         _, buffer = cv2.imencode('.jpg', blank_frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
         frame_bytes = buffer.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        for _ in range(5):
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+            time.sleep(1.0)
         return
 
     frame_count = 0
@@ -795,13 +794,15 @@ def process_client_frame():
             return jsonify({"success": False, "message": "Failed to decode frame"}), 400
 
         h, w, _ = frame.shape
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
         detected_faces = []
         
+        # Scale down frame by 2x for ultra-fast face detection & recognition
+        small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+        
         if HAVE_FACE_RECOGNITION and len(known_face_encodings) > 0:
-            face_locations = face_recognition.face_locations(rgb_frame)
-            face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+            rgb_small = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+            face_locations = face_recognition.face_locations(rgb_small)
+            face_encodings = face_recognition.face_encodings(rgb_small, face_locations)
 
             for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
                 matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.5)
@@ -814,28 +815,34 @@ def process_client_frame():
                         name = known_face_names[best_match_index]
                         mark_attendance(name)
 
+                # Scale coordinates back to original size (2x)
+                top_orig = top * 2
+                right_orig = right * 2
+                bottom_orig = bottom * 2
+                left_orig = left * 2
+
                 detected_faces.append({
                     "name": name,
-                    "top": top,
-                    "right": right,
-                    "bottom": bottom,
-                    "left": left,
-                    "box": [left, top, right - left, bottom - top]
+                    "top": top_orig,
+                    "right": right_orig,
+                    "bottom": bottom_orig,
+                    "left": left_orig,
+                    "box": [left_orig, top_orig, right_orig - left_orig, bottom_orig - top_orig]
                 })
         else:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = safe_detect_faces(gray, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30))
+            gray_small = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
+            faces = safe_detect_faces(gray_small, scaleFactor=1.1, minNeighbors=3, minSize=(20, 20))
             
             roster_list = load_class_roster()
             roster_names = [item['name'] if isinstance(item, dict) else str(item) for item in roster_list]
 
-            for (x, y, fw, fh) in faces:
+            for (sx, sy, sfw, sfh) in faces:
                 name = "Scanning Face..."
                 matched_name = None
 
                 if lbph_trained and lbph_recognizer is not None and len(known_face_names) > 0:
-                    eq_gray = cv2.equalizeHist(gray)
-                    face_roi = cv2.resize(eq_gray[y:y+fh, x:x+fw], (200, 200))
+                    eq_gray = cv2.equalizeHist(gray_small)
+                    face_roi = cv2.resize(eq_gray[sy:sy+sfh, sx:sx+sfw], (200, 200))
                     label_id, confidence = lbph_recognizer.predict(face_roi)
                     if confidence < 160 and 0 <= label_id < len(known_face_names):
                         matched_name = known_face_names[label_id]
@@ -850,6 +857,11 @@ def process_client_frame():
                     mark_attendance(name)
                 else:
                     name = "Face Detected"
+
+                x = sx * 2
+                y = sy * 2
+                fw = sfw * 2
+                fh = sfh * 2
 
                 detected_faces.append({
                     "name": name,
@@ -873,6 +885,51 @@ def process_client_frame():
 
 
 # --- Time, Storage & Authentication Routes ---
+
+def scan_system_drives():
+    """Dynamically scans real mounted system drives and workspace locations on Windows/Linux/macOS."""
+    drives = []
+    if os.name == 'nt':
+        import string
+        import ctypes
+        try:
+            bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+            for letter in string.ascii_uppercase:
+                if bitmask & 1:
+                    drive_root = f"{letter}:\\"
+                    if os.path.exists(drive_root):
+                        label = "Windows (C:)" if letter == 'C' else f"Drive ({letter}:)"
+                        drives.append({
+                            "drive": f"{letter}:",
+                            "name": label,
+                            "suggested_path": f"{letter}:/Smart_Attendance_Storage"
+                        })
+                bitmask >>= 1
+        except Exception as err:
+            print(f"[INFO] Dynamic drive scan notice: {err}")
+
+    # Fallback to dynamic system user home & workspace directories if no drives detected
+    if not drives:
+        user_home = os.path.expanduser("~")
+        workspace_dir = os.path.abspath(os.getcwd())
+        drives = [
+            {"drive": "Workspace", "name": "Current Workspace Directory", "suggested_path": os.path.join(workspace_dir, "attendance_data")},
+            {"drive": "UserHome", "name": "User Profile Directory", "suggested_path": os.path.join(user_home, "Smart_Attendance_Storage")}
+        ]
+    return drives
+
+
+@app.route('/api/detect_drives', methods=['GET'])
+def detect_drives():
+    """API returning dynamically detected PC system drives and workspace storage locations."""
+    drives = scan_system_drives()
+    return jsonify({
+        "success": True,
+        "drives": drives,
+        "active_path": CUSTOM_STORAGE_DIR,
+        "allow_disk": ALLOW_DISK_STORAGE
+    })
+
 
 @app.route('/api/storage_mode', methods=['GET', 'POST'])
 def handle_storage_mode():
@@ -898,6 +955,7 @@ def handle_storage_mode():
             get_recordings_dir()
             get_storage_subfolder("attendance_logs")
             get_storage_subfolder("class_rosters")
+            init_sqlite_db()
             log_activity(f"Storage mode set to COMPUTER STORAGE inside folder: '{CUSTOM_STORAGE_DIR}'", "success")
 
         return jsonify({
@@ -961,6 +1019,32 @@ def set_system_time():
             return jsonify({"success": False, "message": f"Invalid time format: {err}"}), 400
 
     return jsonify({"success": False, "message": "No valid time provided"}), 400
+
+
+@app.route('/api/register_account', methods=['POST'])
+def register_account():
+    """API to dynamically register a new class or user account."""
+    data = request.get_json() or {}
+    login_id = str(data.get('login_id', '')).strip()
+    password = str(data.get('password', '')).strip()
+    class_name = str(data.get('class_name', '')).strip() or login_id
+
+    if not login_id or not password:
+        return jsonify({"success": False, "message": "❌ Please enter a Login ID and Password to register!"}), 400
+
+    clean_code = "".join(c for c in login_id if c.isalnum()).upper() or "CLASS"
+    CLASS_ACCOUNTS[login_id] = {
+        "password": password,
+        "class_name": class_name,
+        "code": clean_code
+    }
+
+    log_activity(f"New Class Account Registered: '{login_id}' ({class_name})", "success")
+    return jsonify({
+        "success": True,
+        "message": f"🎉 Successfully registered account '{login_id}'! You can now log in.",
+        "login_id": login_id
+    })
 
 
 @app.route('/api/login', methods=['POST'])
@@ -1062,15 +1146,32 @@ def get_current_user():
     return jsonify({"logged_in": False})
 
 
+_attendance_api_cache = {}
+
 @app.route('/api/attendance', methods=['GET'])
 def get_attendance():
     """API returning class-isolated today's attendance logs, student stats, and summary calculations."""
     now = get_current_now()
     today_date = now.strftime("%Y-%m-%d")
+    code = get_class_code()
+    target_csv = get_class_csv_path()
+    current_time_sec = time.time()
+    file_mtime = os.path.getmtime(target_csv) if os.path.exists(target_csv) else 0
+
+    cache_entry = _attendance_api_cache.get(code)
+    if cache_entry and (current_time_sec - cache_entry['time'] < 2.0) and cache_entry['mtime'] == file_mtime:
+        cached_payload = dict(cache_entry['payload'])
+        cached_payload["current_time_info"] = {
+            "date_str": now.strftime("%a, %b %d, %Y"),
+            "time_str": now.strftime("%I:%M:%S %p"),
+            "offset_minutes": TIME_OFFSET_MINUTES
+        }
+        cached_payload["logged_in"] = 'user_id' in session
+        cached_payload["login_id"] = session.get('user_id', '')
+        return jsonify(cached_payload)
+
     logs = []
     student_stats = {}
-    
-    target_csv = get_class_csv_path()
     if os.path.exists(target_csv) and os.path.getsize(target_csv) > 0:
         try:
             df = pd.read_csv(target_csv)
@@ -1128,7 +1229,7 @@ def get_attendance():
     total_enrolled = len(all_enrolled_list)
     absent_count = max(0, total_enrolled - total_count)
 
-    return jsonify({
+    response_payload = {
         "attendance": logs,
         "registered_students": all_enrolled_list,
         "roster": roster_list,
@@ -1152,7 +1253,15 @@ def get_attendance():
         },
         "shift_timings": SHIFT_TIMINGS,
         "mongo_status": f"Connected ({get_class_code()})" if USE_MONGO else f"CSV Isolated ({get_class_code()})"
-    })
+    }
+
+    _attendance_api_cache[code] = {
+        'time': current_time_sec,
+        'mtime': file_mtime,
+        'payload': response_payload
+    }
+
+    return jsonify(response_payload)
 
 
 @app.route('/api/monthly_attendance', methods=['GET'])

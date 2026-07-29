@@ -303,6 +303,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    let isClientFrameProcessing = false;
+
     function startClientFrameProcessor() {
         stopClientFrameProcessor();
         const clientVideo = document.getElementById('clientVideo');
@@ -312,14 +314,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const ctx = clientCanvas.getContext('2d');
 
         clientFrameInterval = setInterval(async () => {
-            if (!isCameraActive || !useClientDeviceCam || clientVideo.paused || clientVideo.ended) return;
+            if (isClientFrameProcessing || !isCameraActive || !useClientDeviceCam || clientVideo.paused || clientVideo.ended) return;
 
             if (clientVideo.videoWidth > 0 && clientVideo.videoHeight > 0) {
-                clientCanvas.width = 640;
-                clientCanvas.height = 480;
-                ctx.drawImage(clientVideo, 0, 0, 640, 480);
+                isClientFrameProcessing = true;
+                clientCanvas.width = 480;
+                clientCanvas.height = 360;
+                ctx.drawImage(clientVideo, 0, 0, 480, 360);
 
-                const dataUrl = clientCanvas.toDataURL('image/jpeg', 0.7);
+                const dataUrl = clientCanvas.toDataURL('image/jpeg', 0.55);
 
                 try {
                     const res = await fetch('/api/process_client_frame', {
@@ -374,9 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch (err) {
                     console.error("Client frame post error:", err);
+                } finally {
+                    isClientFrameProcessing = false;
                 }
             }
-        }, 350);
+        }, 200);
     }
 
     function stopClientFrameProcessor() {
@@ -456,6 +461,46 @@ document.addEventListener('DOMContentLoaded', () => {
     function openStorageModal() {
         if (storageModal) storageModal.classList.add('active');
         highlightCurrentStorageCard();
+        fetchDetectedDrives();
+    }
+
+    async function fetchDetectedDrives() {
+        try {
+            const res = await fetch('/api/detect_drives');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.drives && data.drives.length > 0) {
+                    const container = document.getElementById('pcDriveChips');
+                    if (container) {
+                        const savedPath = localStorage.getItem('custom_storage_path') || data.active_path || 'attendance_data';
+                        container.innerHTML = data.drives.map(d => {
+                            const isSelected = savedPath.toUpperCase().startsWith(d.drive.toUpperCase());
+                            const chipClass = isSelected ? 'chip-btn drive-chip active' : 'chip-btn drive-chip';
+                            return `<button type="button" class="${chipClass}" data-path="${d.suggested_path}"><i class="fa-solid fa-hard-drive text-warning"></i> ${d.name}</button>`;
+                        }).join('');
+
+                        attachDriveChipHandlers();
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn("Drive detection fetch info:", err);
+        }
+    }
+
+    function attachDriveChipHandlers() {
+        document.querySelectorAll('.drive-chip').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                const path = chip.getAttribute('data-path');
+                const customPathInput = document.getElementById('customFolderPathInput');
+                if (customPathInput && path) {
+                    customPathInput.value = path;
+                    document.querySelectorAll('.drive-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    setStoragePreference('internal_disk', true);
+                }
+            });
+        });
     }
 
     function closeStorageModal() {
@@ -501,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStorageBadgeUI(mode, data.custom_path || custom_path);
                 if (isExplicit) {
                     if (mode === 'internal_disk') {
-                        showToast(`📁 Computer Folder set to '${data.custom_path || custom_path}'! Subfolders automatically created & organized.`, 'success');
+                        showToast(`💾 Storage Permission Granted! All files saved to '${data.custom_path || custom_path}'`, 'success');
                     } else {
                         showToast('🌐 Website Only Mode Enabled! No files created on computer internal storage.', 'info');
                     }
@@ -516,13 +561,48 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateStorageBadgeUI(mode, path = 'attendance_data') {
         if (headerStorageBadgeText) {
             if (mode === 'internal_disk') {
-                headerStorageBadgeText.textContent = `Folder: ${path}`;
-                if (headerStorageIcon) headerStorageIcon.className = 'fa-solid fa-folder-tree text-warning';
+                headerStorageBadgeText.textContent = `PC Storage: ${path}`;
+                if (headerStorageIcon) headerStorageIcon.className = 'fa-solid fa-hard-drive text-warning';
             } else {
                 headerStorageBadgeText.textContent = 'Website Only (No Files)';
                 if (headerStorageIcon) headerStorageIcon.className = 'fa-solid fa-cloud text-info';
             }
         }
+    }
+
+    const driveSelectDropdown = document.getElementById('driveSelectDropdown');
+    const btnBrowseFolder = document.getElementById('btnBrowseFolder');
+    const folderPickerInput = document.getElementById('folderPickerInput');
+
+    if (driveSelectDropdown) {
+        driveSelectDropdown.addEventListener('change', (e) => {
+            const selectedVal = e.target.value;
+            const customPathInput = document.getElementById('customFolderPathInput');
+            if (selectedVal !== 'custom' && customPathInput) {
+                customPathInput.value = selectedVal;
+                setStoragePreference('internal_disk', true);
+            } else if (customPathInput) {
+                customPathInput.focus();
+            }
+        });
+    }
+
+    if (btnBrowseFolder && folderPickerInput) {
+        btnBrowseFolder.addEventListener('click', () => {
+            folderPickerInput.click();
+        });
+
+        folderPickerInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                const relativePath = e.target.files[0].webkitRelativePath || '';
+                const folderName = relativePath.split('/')[0] || 'Attendance_Data';
+                const customPathInput = document.getElementById('customFolderPathInput');
+                if (customPathInput) {
+                    customPathInput.value = `D:/${folderName}`;
+                    setStoragePreference('internal_disk', true);
+                }
+            }
+        });
     }
 
     const btnApplyCustomFolder = document.getElementById('btnApplyCustomFolder');
@@ -531,6 +611,8 @@ document.addEventListener('DOMContentLoaded', () => {
             setStoragePreference('internal_disk', true);
         });
     }
+
+    attachDriveChipHandlers();
 
     if (btnOpenStorageModal) btnOpenStorageModal.addEventListener('click', openStorageModal);
     if (closeStorageModalBtn) closeStorageModalBtn.addEventListener('click', closeStorageModal);
@@ -549,29 +631,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialStorageMode = localStorage.getItem('storage_mode') || 'internal_disk';
     setStoragePreference(initialStorageMode, false);
 
-    // Quick Class Chips
-    const btnSelectClass0 = document.getElementById('btnSelectClass0');
-    if (btnSelectClass0) {
-        btnSelectClass0.addEventListener('click', () => {
-            loginIdInput.value = 'CLASS 1';
-            loginPassInput.value = '123456789';
-            if (loginErrorMsg) loginErrorMsg.style.display = 'none';
-        });
+
+
+    // Registration Modal System
+    const regModal = document.getElementById('regModal');
+    const btnOpenRegModal = document.getElementById('btnOpenRegModal');
+    const closeRegModalBtn = document.getElementById('closeRegModalBtn');
+    const cancelRegModalBtn = document.getElementById('cancelRegModalBtn');
+    const regModalForm = document.getElementById('regModalForm');
+
+    function toggleRegModal(show) {
+        if (regModal) {
+            if (show) regModal.classList.add('active');
+            else regModal.classList.remove('active');
+        }
     }
 
-    if (btnSelectClass1) {
-        btnSelectClass1.addEventListener('click', () => {
-            loginIdInput.value = 'ECE 2YEAR@LAPC';
-            loginPassInput.value = '123456789';
-            if (loginErrorMsg) loginErrorMsg.style.display = 'none';
-        });
-    }
+    if (btnOpenRegModal) btnOpenRegModal.addEventListener('click', () => toggleRegModal(true));
+    if (closeRegModalBtn) closeRegModalBtn.addEventListener('click', () => toggleRegModal(false));
+    if (cancelRegModalBtn) cancelRegModalBtn.addEventListener('click', () => toggleRegModal(false));
 
-    if (btnSelectClass2) {
-        btnSelectClass2.addEventListener('click', () => {
-            loginIdInput.value = 'ECE 3YEAR@LAPC';
-            loginPassInput.value = '123456789';
-            if (loginErrorMsg) loginErrorMsg.style.display = 'none';
+    if (regModalForm) {
+        regModalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const regId = document.getElementById('regModalId')?.value.trim() || '';
+            const regName = document.getElementById('regModalName')?.value.trim() || '';
+            const regPass = document.getElementById('regModalPass')?.value.trim() || '';
+            const regError = document.getElementById('regModalErrorMsg');
+
+            if (!regId || !regPass) {
+                if (regError) {
+                    regError.textContent = '❌ Please enter Login ID and Password!';
+                    regError.style.display = 'block';
+                }
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/register_account', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login_id: regId, class_name: regName, password: regPass })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showToast(data.message || 'Account created successfully!', 'success');
+                    if (loginIdInput) loginIdInput.value = regId;
+                    if (loginPassInput) loginPassInput.value = regPass;
+                    toggleRegModal(false);
+                } else {
+                    if (regError) {
+                        regError.textContent = data.message || 'Registration failed!';
+                        regError.style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                showToast('Error creating account', 'danger');
+            }
         });
     }
 
@@ -1612,33 +1728,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check Initial Session
     checkAuthSession();
     setInterval(fetchAttendanceData, 2500);
-
-    // 3D Card Interactive Mouse Tilt Physics System
-    function init3DCardTilt() {
-        document.querySelectorAll('.tilt-card').forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-
-                const rotateX = ((y - centerY) / centerY) * -12;
-                const rotateY = ((x - centerX) / centerX) * 12;
-
-                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-            });
-
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
-            });
-        });
-    }
-
-    // Launch 3D Tilt System
-    setTimeout(() => {
-        init3DCardTilt();
-    }, 200);
 });
 
