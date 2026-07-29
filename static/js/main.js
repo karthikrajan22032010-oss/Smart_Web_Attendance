@@ -331,50 +331,77 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ image: dataUrl })
                     });
                     const data = await res.json();
-                    if (data.success && data.faces) {
-                        data.faces.forEach(f => {
+                    const faceList = data.detected_faces || data.faces || [];
+                    if (data.success && faceList.length > 0) {
+                        faceList.forEach(f => {
                             const [bx, by, bw, bh] = f.box || [f.left, f.top, f.right - f.left, f.bottom - f.top];
                             const isMatch = f.is_match || (f.name && !f.name.includes('Unknown') && !f.name.includes('Scanning') && !f.name.includes('Detected'));
 
-                            // Draw AI reticle border (Green for MATCH, Red for UNMATCH)
-                            ctx.strokeStyle = isMatch ? '#10B981' : '#EF4444';
+                            // Colors: Green=MATCH, Yellow=FACE DETECTED (Unregistered), Red=UNMATCH
+                            const boxColor   = isMatch ? '#10B981' : '#FACC15';
+                            const cornerColor = isMatch ? '#34D399' : '#FDE68A';
+                            const badgeBg    = isMatch ? 'rgba(16, 185, 129, 0.95)' : 'rgba(234, 179, 8, 0.92)';
+
+                            // Draw border
+                            ctx.strokeStyle = boxColor;
                             ctx.lineWidth = 2;
                             ctx.strokeRect(bx, by, bw, bh);
 
-                            // Draw glowing corners
+                            // Draw corner reticle
                             const cornerLen = Math.min(bw, bh) * 0.22;
-                            ctx.strokeStyle = isMatch ? '#34D399' : '#F87171';
+                            ctx.strokeStyle = cornerColor;
                             ctx.lineWidth = 4;
 
-                            // Top-Left corner
+                            // Top-Left
                             ctx.beginPath();
                             ctx.moveTo(bx, by + cornerLen);
                             ctx.lineTo(bx, by);
                             ctx.lineTo(bx + cornerLen, by);
                             ctx.stroke();
 
-                            // Top-Right corner
+                            // Top-Right
                             ctx.beginPath();
                             ctx.moveTo(bx + bw - cornerLen, by);
                             ctx.lineTo(bx + bw, by);
                             ctx.lineTo(bx + bw, by + cornerLen);
                             ctx.stroke();
 
+                            // Bottom-Left
+                            ctx.beginPath();
+                            ctx.moveTo(bx, by + bh - cornerLen);
+                            ctx.lineTo(bx, by + bh);
+                            ctx.lineTo(bx + cornerLen, by + bh);
+                            ctx.stroke();
+
+                            // Bottom-Right
+                            ctx.beginPath();
+                            ctx.moveTo(bx + bw - cornerLen, by + bh);
+                            ctx.lineTo(bx + bw, by + bh);
+                            ctx.lineTo(bx + bw, by + bh - cornerLen);
+                            ctx.stroke();
+
                             // Label Badge
-                            const pctText = f.confidence_pct ? ` (${f.confidence_pct}%)` : '';
-                            const labelText = isMatch ? `✔ MATCH: ${f.name}${pctText}` : `✖ UNMATCH: Unknown Face`;
-                            ctx.fillStyle = isMatch ? 'rgba(16, 185, 129, 0.95)' : 'rgba(239, 68, 68, 0.95)';
-                            const labelWidth = Math.max(160, ctx.measureText(labelText).width + 20);
+                            ctx.font = '700 12px Inter, sans-serif';
+                            const pctText = (isMatch && f.confidence_pct) ? ` (${f.confidence_pct}%)` : '';
+                            const labelText = isMatch
+                                ? `✔ MATCH: ${f.name}${pctText}`
+                                : `⚠ FACE DETECTED — Not Registered`;
+                            const labelWidth = Math.max(180, ctx.measureText(labelText).width + 20);
+                            ctx.fillStyle = badgeBg;
                             ctx.fillRect(bx, Math.max(0, by - 26), labelWidth, 24);
 
                             ctx.fillStyle = '#FFFFFF';
-                            ctx.font = '700 12px Inter, sans-serif';
                             ctx.fillText(labelText, bx + 8, Math.max(16, by - 9));
 
                             if (isMatch) {
                                 fetchAttendanceData();
                             }
                         });
+                    } else if (data.success && faceList.length === 0) {
+                        // No face detected — show subtle scanning overlay
+                        ctx.font = '600 13px Inter, sans-serif';
+                        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+                        ctx.fillText('🔍 Scanning for Face...', 12, 24);
                     }
                 } catch (err) {
                     console.error("Client frame post error:", err);
