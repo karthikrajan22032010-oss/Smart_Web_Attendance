@@ -372,21 +372,25 @@ def load_known_faces():
     labels_data = []
 
     valid_extensions = ('.jpg', '.jpeg', '.png')
-    idx = 0
+    name_to_id = {}
     
     class_faces_dir = get_known_faces_dir()
     parent_faces_dir = os.path.join(CUSTOM_STORAGE_DIR, "known_faces")
     
-    target_dirs = [class_faces_dir]
-    if os.path.exists(parent_faces_dir):
+    target_dirs = []
+    if os.path.exists(class_faces_dir):
+        target_dirs.append(class_faces_dir)
+    if os.path.exists(parent_faces_dir) and parent_faces_dir not in target_dirs:
         target_dirs.append(parent_faces_dir)
 
     processed_files = set()
 
     for target_dir in target_dirs:
-        if not os.path.exists(target_dir):
-            continue
-        for root, _, files in os.walk(target_dir):
+        for root, dirs, files in os.walk(target_dir):
+            # Avoid walking into subdirectories if we are in parent_faces_dir and already scanned class_faces_dir
+            if target_dir == parent_faces_dir and class_faces_dir != parent_faces_dir:
+                dirs[:] = [d for d in dirs if os.path.join(root, d) != class_faces_dir]
+
             for filename in files:
                 if filename.lower().endswith(valid_extensions):
                     filepath = os.path.join(root, filename)
@@ -402,14 +406,19 @@ def load_known_faces():
                     else:
                         name = raw_stem.replace('_', ' ').title()
 
+                    if name not in name_to_id:
+                        name_to_id[name] = len(known_face_names)
+                        known_face_names.append(name)
+                    
+                    label_idx = name_to_id[name]
+
                     if HAVE_FACE_RECOGNITION:
                         try:
                             image = face_recognition.load_image_file(filepath)
                             encodings = face_recognition.face_encodings(image)
                             if encodings:
                                 known_face_encodings.append(encodings[0])
-                                known_face_names.append(name)
-                                print(f"[INFO] Loaded face encoding for: {name} ({filename})")
+                                print(f"[INFO] Loaded dlib face encoding for: {name} ({filename})")
                             else:
                                 print(f"[WARNING] No face found in image: {filename}")
                         except Exception as e:
@@ -423,27 +432,25 @@ def load_known_faces():
                                 for (fx, fy, fw, fh) in detected_faces:
                                     face_roi = cv2.resize(eq_gray[fy:fy+fh, fx:fx+fw], (200, 200))
                                     faces_data.append(face_roi)
-                                    labels_data.append(idx)
+                                    labels_data.append(label_idx)
                             else:
                                 face_roi = cv2.resize(eq_gray, (200, 200))
                                 faces_data.append(face_roi)
-                                labels_data.append(idx)
+                                labels_data.append(label_idx)
 
-                            known_face_names.append(name)
-                            print(f"[INFO] Prepared LBPH training data for: {name} ({filename})")
-                            idx += 1
+                            print(f"[INFO] Prepared LBPH training data for: {name} (Label ID {label_idx}, {filename})")
 
     if not HAVE_FACE_RECOGNITION and len(faces_data) > 0:
         try:
             if hasattr(cv2, 'face') and hasattr(cv2.face, 'LBPHFaceRecognizer_create'):
-                lbph_recognizer = cv2.face.LBPHFaceRecognizer_create()
+                lbph_recognizer = cv2.face.LBPHFaceRecognizer_create(radius=1, neighbors=8, grid_x=8, grid_y=8)
                 lbph_recognizer.train(faces_data, np.array(labels_data))
                 lbph_trained = True
-                print(f"[INFO] Successfully trained OpenCV LBPH Face Recognizer with {len(faces_data)} face images.")
+                print(f"[INFO] Successfully trained OpenCV LBPH Face Recognizer with {len(faces_data)} face images across {len(known_face_names)} unique student names.")
         except Exception as e:
             print(f"[ERROR] Failed to train LBPH face recognizer: {e}")
 
-    print(f"[INFO] Total registered faces loaded: {len(known_face_names)}")
+    print(f"[INFO] Total registered student faces loaded: {len(known_face_names)} ({known_face_names})")
 
 load_known_faces()
 
