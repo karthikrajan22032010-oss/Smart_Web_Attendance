@@ -1488,51 +1488,64 @@ def delete_student():
     
     # 1. Delete ALL face photo extensions for this student from known_faces directory
     faces_dir = get_known_faces_dir()
-    if os.path.exists(faces_dir):
-        for filename in os.listdir(faces_dir):
-            if filename.lower().endswith(valid_extensions):
-                fname_no_ext = os.path.splitext(filename)[0].replace('_', ' ').title()
-                if fname_no_ext.lower() == name.lower():
-                    fpath = os.path.join(faces_dir, filename)
-                    try:
-                        os.remove(fpath)
-                        deleted_photo = True
-                        print(f"[INFO] Deleted reference face photo: {fpath}")
-                    except Exception as err:
-                        print(f"[ERROR] Deleting face photo {fpath}: {err}")
+    parent_faces_dir = os.path.join(CUSTOM_STORAGE_DIR, "known_faces")
+    
+    for fdir in [faces_dir, parent_faces_dir]:
+        if os.path.exists(fdir):
+            for filename in os.listdir(fdir):
+                if filename.lower().endswith(valid_extensions):
+                    raw_stem = os.path.splitext(filename)[0]
+                    parts = raw_stem.split('_')
+                    if len(parts) > 1 and parts[0].isdigit():
+                        extracted_name = " ".join(parts[1:]).replace('_', ' ')
+                    else:
+                        extracted_name = raw_stem.replace('_', ' ')
+
+                    if extracted_name.strip().lower() == name.strip().lower():
+                        fpath = os.path.join(fdir, filename)
+                        try:
+                            os.remove(fpath)
+                            deleted_photo = True
+                            print(f"[INFO] Deleted reference face photo: {fpath}")
+                        except Exception as err:
+                            print(f"[ERROR] Deleting face photo {fpath}: {err}")
 
     # 2. Total delete student records from all class CSV attendance files
-    target_csvs = ["attendance_CLASS1.csv", "attendance_ECE2.csv", "attendance_ECE3.csv", "attendance.csv"]
-    for csv_file in target_csvs:
+    target_csvs = [get_class_csv_path(), "attendance_CLASS1.csv", "attendance_ECE2.csv", "attendance_ECE3.csv", "attendance.csv"]
+    for csv_file in set(target_csvs):
         if os.path.exists(csv_file) and os.path.getsize(csv_file) > 0:
             try:
                 df = pd.read_csv(csv_file)
                 if 'Name' in df.columns:
                     initial_len = len(df)
-                    df = df[df['Name'].str.lower() != name.lower()]
+                    df = df[df['Name'].astype(str).str.strip().str.lower() != name.strip().lower()]
                     if len(df) < initial_len:
                         df.to_csv(csv_file, index=False)
                         print(f"[INFO] Purged student records from {csv_file}")
             except Exception as e:
                 print(f"[ERROR] Purging student from {csv_file}: {e}")
 
-    # 3. Delete from MongoDB collections if active
-    if USE_MONGO and db is not None:
+    # 3. Delete from SQLite database
+    db_path = get_db_path()
+    if os.path.exists(db_path):
         try:
-            db.registered_faces.delete_many({"name": {"$regex": f"^{name}$", "$options": "i"}})
-            for code in ["CLASS1", "ECE2", "ECE3"]:
-                db[f"attendance_logs_{code}"].delete_many({"name": {"$regex": f"^{name}$", "$options": "i"}})
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM attendance_logs WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))", (name,))
+            cursor.execute("DELETE FROM registered_students WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))", (name,))
+            conn.commit()
+            conn.close()
+            print(f"[INFO] Deleted student {name} from SQLite database {db_path}")
         except Exception as err:
-            print(f"[WARNING] MongoDB delete student error: {err}")
+            print(f"[ERROR] Deleting from SQLite {db_path}: {err}")
 
     # 4. Total remove from class roster JSON file
     current_roster = load_class_roster()
     new_roster = [
         s for s in current_roster
-        if (s.get('name', '') if isinstance(s, dict) else str(s)).lower() != name.lower()
+        if (s.get('name', '') if isinstance(s, dict) else str(s)).strip().lower() != name.strip().lower()
     ]
-    if len(new_roster) != len(current_roster):
-        save_class_roster(new_roster)
+    save_class_roster(new_roster)
 
     # 5. Reload in-memory face encodings immediately
     load_known_faces()
