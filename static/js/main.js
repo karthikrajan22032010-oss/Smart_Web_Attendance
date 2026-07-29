@@ -669,21 +669,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeRegModalBtn) closeRegModalBtn.addEventListener('click', () => toggleRegModal(false));
     if (cancelRegModalBtn) cancelRegModalBtn.addEventListener('click', () => toggleRegModal(false));
 
-    const regCaptchaCheckbox = document.getElementById('regCaptchaCheckbox');
-    const captchaLabelText = document.getElementById('captchaLabelText');
-
-    if (regCaptchaCheckbox) {
-        regCaptchaCheckbox.addEventListener('change', (e) => {
-            if (captchaLabelText) {
-                if (e.target.checked) {
-                    captchaLabelText.innerHTML = '<span style="color: #059669; font-weight: 700;"><i class="fa-solid fa-circle-check"></i> Verified Human</span>';
-                } else {
-                    captchaLabelText.innerHTML = 'I\'m not a robot';
-                    captchaLabelText.style.color = '#1e293b';
-                }
-            }
-        });
-    }
 
     if (regModalForm) {
         regModalForm.addEventListener('submit', async (e) => {
@@ -701,14 +686,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (!regCaptchaCheckbox || !regCaptchaCheckbox.checked) {
-                if (regError) {
-                    regError.textContent = '❌ Please check "I\'m not a robot" to verify registration!';
-                    regError.style.display = 'block';
-                }
-                return;
-            }
-
             try {
                 const res = await fetch('/api/register_account', {
                     method: 'POST',
@@ -720,8 +697,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(data.message || 'Account created successfully!', 'success');
                     if (loginIdInput) loginIdInput.value = regId;
                     if (loginPassInput) loginPassInput.value = regPass;
-                    if (regCaptchaCheckbox) regCaptchaCheckbox.checked = false;
-                    if (captchaLabelText) captchaLabelText.innerHTML = "I'm not a robot";
                     toggleRegModal(false);
                 } else {
                     if (regError) {
@@ -734,6 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
 
     // Password Toggle
     if (btnTogglePass) {
