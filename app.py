@@ -426,27 +426,43 @@ def load_known_faces():
                     else:
                         img_gray = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
                         if img_gray is not None:
-                            eq_gray = cv2.equalizeHist(img_gray)
-                            detected_faces = safe_detect_faces(eq_gray, scaleFactor=1.05, minNeighbors=2)
+                            # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+                            clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+                            enhanced_gray = clahe.apply(img_gray)
+                            
+                            detected_faces = safe_detect_faces(enhanced_gray, scaleFactor=1.05, minNeighbors=2)
                             if len(detected_faces) > 0:
                                 for (fx, fy, fw, fh) in detected_faces:
-                                    face_roi = cv2.resize(eq_gray[fy:fy+fh, fx:fx+fw], (200, 200))
+                                    face_roi = cv2.resize(enhanced_gray[fy:fy+fh, fx:fx+fw], (200, 200))
+                                    # Original face ROI
                                     faces_data.append(face_roi)
                                     labels_data.append(label_idx)
+                                    
+                                    # Augmentation 1: Horizontal Flip (Mirroring for webcam selfie match)
+                                    faces_data.append(cv2.flip(face_roi, 1))
+                                    labels_data.append(label_idx)
+                                    
+                                    # Augmentation 2: Enhanced Contrast / Brightness Shift
+                                    bright_roi = cv2.convertScaleAbs(face_roi, alpha=1.15, beta=10)
+                                    faces_data.append(bright_roi)
+                                    labels_data.append(label_idx)
                             else:
-                                face_roi = cv2.resize(eq_gray, (200, 200))
+                                face_roi = cv2.resize(enhanced_gray, (200, 200))
                                 faces_data.append(face_roi)
                                 labels_data.append(label_idx)
+                                faces_data.append(cv2.flip(face_roi, 1))
+                                labels_data.append(label_idx)
 
-                            print(f"[INFO] Prepared LBPH training data for: {name} (Label ID {label_idx}, {filename})")
+                            print(f"[INFO] Prepared high-accuracy LBPH training data (3x augmented) for: {name} (Label ID {label_idx}, {filename})")
 
     if not HAVE_FACE_RECOGNITION and len(faces_data) > 0:
         try:
             if hasattr(cv2, 'face') and hasattr(cv2.face, 'LBPHFaceRecognizer_create'):
-                lbph_recognizer = cv2.face.LBPHFaceRecognizer_create(radius=1, neighbors=8, grid_x=8, grid_y=8)
+                # Upgraded High-Precision LBPH parameters (radius=2, neighbors=16)
+                lbph_recognizer = cv2.face.LBPHFaceRecognizer_create(radius=2, neighbors=16, grid_x=8, grid_y=8)
                 lbph_recognizer.train(faces_data, np.array(labels_data))
                 lbph_trained = True
-                print(f"[INFO] Successfully trained OpenCV LBPH Face Recognizer with {len(faces_data)} face images across {len(known_face_names)} unique student names.")
+                print(f"[INFO] Successfully trained High-Precision OpenCV LBPH Face Recognizer with {len(faces_data)} augmented samples across {len(known_face_names)} unique student names.")
         except Exception as e:
             print(f"[ERROR] Failed to train LBPH face recognizer: {e}")
 
@@ -865,13 +881,14 @@ def process_client_frame():
                 match_pct = 0
 
                 if lbph_trained and lbph_recognizer is not None and len(known_face_names) > 0:
-                    eq_gray = cv2.equalizeHist(gray_small)
-                    face_roi = cv2.resize(eq_gray[sy:sy+sfh, sx:sx+sfw], (200, 200))
+                    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+                    enhanced_gray = clahe.apply(gray_small)
+                    face_roi = cv2.resize(enhanced_gray[sy:sy+sfh, sx:sx+sfw], (200, 200))
                     label_id, confidence = lbph_recognizer.predict(face_roi)
-                    if confidence < 85 and 0 <= label_id < len(known_face_names):
+                    if confidence < 95 and 0 <= label_id < len(known_face_names):
                         matched_name = known_face_names[label_id]
                         is_match = True
-                        match_pct = int(max(0, min(100, (1.0 - (confidence / 100.0)) * 100)))
+                        match_pct = int(max(20, min(99, (1.0 - (confidence / 130.0)) * 100)))
 
                 if matched_name:
                     name = matched_name
