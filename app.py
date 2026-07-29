@@ -314,10 +314,13 @@ lbph_trained = False
 
 # OpenCV Fallback Haar Cascade Loader
 face_cascade = None
+_CASCADE_URL = "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml"
+_CASCADE_LOCAL = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'haarcascade_frontalface_default.xml')
+
 try:
     cascade_candidates = [
+        _CASCADE_LOCAL,
         'haarcascade_frontalface_default.xml',
-        os.path.join(os.path.dirname(__file__), 'haarcascade_frontalface_default.xml'),
         os.path.join(getattr(cv2, 'data', None).haarcascades, 'haarcascade_frontalface_default.xml') if hasattr(cv2, 'data') and hasattr(cv2.data, 'haarcascades') else '',
         '/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml',
         '/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml'
@@ -329,6 +332,18 @@ try:
                 face_cascade = cascade_obj
                 print(f"[INFO] Loaded OpenCV Haar Cascade from path: {c_path}")
                 break
+
+    # If no cascade loaded, download it from OpenCV GitHub
+    if face_cascade is None:
+        import urllib.request
+        print(f"[INFO] Downloading Haar Cascade XML from OpenCV GitHub...")
+        urllib.request.urlretrieve(_CASCADE_URL, _CASCADE_LOCAL)
+        cascade_obj = cv2.CascadeClassifier(_CASCADE_LOCAL)
+        if hasattr(cascade_obj, 'empty') and not cascade_obj.empty():
+            face_cascade = cascade_obj
+            print(f"[INFO] Successfully downloaded and loaded Haar Cascade.")
+        else:
+            print(f"[WARNING] Downloaded Haar Cascade could not be loaded.")
 except Exception as cascade_err:
     print(f"[WARNING] Could not initialize OpenCV CascadeClassifier: {cascade_err}")
 
