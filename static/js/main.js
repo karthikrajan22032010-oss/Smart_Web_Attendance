@@ -1725,6 +1725,34 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.card-absent')?.addEventListener('click', () => openCategoryModal('absent'));
     document.querySelector('.card-enrolled')?.addEventListener('click', () => openCategoryModal('enrolled'));
 
+    // Cookie Consent Banner System
+    const cookieBanner = document.getElementById('cookieConsentBanner');
+    const btnAcceptCookies = document.getElementById('btnAcceptCookies');
+
+    function checkCookieConsent() {
+        const isAccepted = localStorage.getItem('cookie_consent') === 'accepted' || document.cookie.includes('cookie_consent=accepted');
+        if (cookieBanner) {
+            if (isAccepted) {
+                cookieBanner.style.display = 'none';
+            } else {
+                cookieBanner.style.display = 'flex';
+            }
+        }
+    }
+
+    if (btnAcceptCookies) {
+        btnAcceptCookies.addEventListener('click', async () => {
+            localStorage.setItem('cookie_consent', 'accepted');
+            if (cookieBanner) cookieBanner.style.display = 'none';
+            try {
+                await fetch('/api/accept_cookies', { method: 'POST' });
+            } catch (e) {}
+            showToast('🍪 Cookie & privacy preferences saved!', 'success');
+        });
+    }
+
+    checkCookieConsent();
+
     // Check Initial Session
     checkAuthSession();
     setInterval(fetchAttendanceData, 2500);

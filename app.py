@@ -31,8 +31,16 @@ except ImportError:
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "smart_attendance_secret_key_2026")
+app.config['SESSION_COOKIE_NAME'] = 'smart_attendance_session'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-# Custom Computer Storage Folder Directory System
+@app.route('/api/accept_cookies', methods=['POST'])
+def accept_cookies():
+    """API to set user cookie acceptance preference."""
+    resp = jsonify({"success": True, "message": "Cookie preferences accepted securely."})
+    resp.set_cookie('cookie_consent', 'accepted', max_age=365*24*3600, httponly=False, samesite='Lax')
+    return resp
 CUSTOM_STORAGE_DIR = os.getenv("CUSTOM_STORAGE_DIR", "attendance_data")
 
 def get_storage_subfolder(subname):
