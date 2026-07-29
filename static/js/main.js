@@ -304,6 +304,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let isClientFrameProcessing = false;
+    let _lastAttendanceFetchTime = 0;
+    let _consecutiveErrors = 0;
 
     function startClientFrameProcessor() {
         stopClientFrameProcessor();
@@ -331,16 +333,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ image: dataUrl })
                     });
                     const data = await res.json();
+                    _consecutiveErrors = 0;
                     const faceList = data.detected_faces || data.faces || [];
+
+                    // Redraw the video frame fresh before drawing overlays
+                    ctx.drawImage(clientVideo, 0, 0, 480, 360);
+
                     if (data.success && faceList.length > 0) {
                         faceList.forEach(f => {
                             const [bx, by, bw, bh] = f.box || [f.left, f.top, f.right - f.left, f.bottom - f.top];
                             const isMatch = f.is_match || (f.name && !f.name.includes('Unknown') && !f.name.includes('Scanning') && !f.name.includes('Detected'));
 
-                            // Colors: Green=MATCH, Yellow=FACE DETECTED (Unregistered), Red=UNMATCH
-                            const boxColor   = isMatch ? '#10B981' : '#FACC15';
+                            // Colors: Green=MATCH, Yellow=FACE DETECTED (Unregistered)
+                            const boxColor    = isMatch ? '#10B981' : '#FACC15';
                             const cornerColor = isMatch ? '#34D399' : '#FDE68A';
-                            const badgeBg    = isMatch ? 'rgba(16, 185, 129, 0.95)' : 'rgba(234, 179, 8, 0.92)';
+                            const badgeBg     = isMatch ? 'rgba(16, 185, 129, 0.95)' : 'rgba(234, 179, 8, 0.92)';
 
                             // Draw border
                             ctx.strokeStyle = boxColor;
@@ -353,63 +360,46 @@ document.addEventListener('DOMContentLoaded', () => {
                             ctx.lineWidth = 4;
 
                             // Top-Left
-                            ctx.beginPath();
-                            ctx.moveTo(bx, by + cornerLen);
-                            ctx.lineTo(bx, by);
-                            ctx.lineTo(bx + cornerLen, by);
-                            ctx.stroke();
-
+                            ctx.beginPath(); ctx.moveTo(bx, by + cornerLen); ctx.lineTo(bx, by); ctx.lineTo(bx + cornerLen, by); ctx.stroke();
                             // Top-Right
-                            ctx.beginPath();
-                            ctx.moveTo(bx + bw - cornerLen, by);
-                            ctx.lineTo(bx + bw, by);
-                            ctx.lineTo(bx + bw, by + cornerLen);
-                            ctx.stroke();
-
+                            ctx.beginPath(); ctx.moveTo(bx + bw - cornerLen, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, by + cornerLen); ctx.stroke();
                             // Bottom-Left
-                            ctx.beginPath();
-                            ctx.moveTo(bx, by + bh - cornerLen);
-                            ctx.lineTo(bx, by + bh);
-                            ctx.lineTo(bx + cornerLen, by + bh);
-                            ctx.stroke();
-
+                            ctx.beginPath(); ctx.moveTo(bx, by + bh - cornerLen); ctx.lineTo(bx, by + bh); ctx.lineTo(bx + cornerLen, by + bh); ctx.stroke();
                             // Bottom-Right
-                            ctx.beginPath();
-                            ctx.moveTo(bx + bw - cornerLen, by + bh);
-                            ctx.lineTo(bx + bw, by + bh);
-                            ctx.lineTo(bx + bw, by + bh - cornerLen);
-                            ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(bx + bw - cornerLen, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw, by + bh - cornerLen); ctx.stroke();
 
                             // Label Badge
                             ctx.font = '700 12px Inter, sans-serif';
                             const pctText = (isMatch && f.confidence_pct) ? ` (${f.confidence_pct}%)` : '';
-                            const labelText = isMatch
-                                ? `✔ MATCH: ${f.name}${pctText}`
-                                : `⚠ FACE DETECTED — Not Registered`;
+                            const labelText = isMatch ? `✔ MATCH: ${f.name}${pctText}` : `⚠ FACE DETECTED — Not Registered`;
                             const labelWidth = Math.max(180, ctx.measureText(labelText).width + 20);
                             ctx.fillStyle = badgeBg;
                             ctx.fillRect(bx, Math.max(0, by - 26), labelWidth, 24);
-
                             ctx.fillStyle = '#FFFFFF';
                             ctx.fillText(labelText, bx + 8, Math.max(16, by - 9));
 
+                            // Debounced attendance fetch — max once every 5 seconds
                             if (isMatch) {
-                                fetchAttendanceData();
+                                const now = Date.now();
+                                if (now - _lastAttendanceFetchTime > 5000) {
+                                    _lastAttendanceFetchTime = now;
+                                    fetchAttendanceData();
+                                }
                             }
                         });
                     } else if (data.success && faceList.length === 0) {
-                        // No face detected — show subtle scanning overlay
                         ctx.font = '600 13px Inter, sans-serif';
                         ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
                         ctx.fillText('🔍 Scanning for Face...', 12, 24);
                     }
                 } catch (err) {
+                    _consecutiveErrors++;
                     console.error("Client frame post error:", err);
                 } finally {
                     isClientFrameProcessing = false;
                 }
             }
-        }, 200);
+        }, 900);  // 900ms interval — smooth scanning without server flooding
     }
 
     function stopClientFrameProcessor() {
@@ -1841,6 +1831,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check Initial Session
     checkAuthSession();
-    setInterval(fetchAttendanceData, 2500);
+    setInterval(fetchAttendanceData, 15000);  // Poll attendance every 15s (was 2.5s)
 });
 
