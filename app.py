@@ -813,13 +813,13 @@ def process_client_frame():
             face_encodings = face_recognition.face_encodings(rgb_small, face_locations)
 
             for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-                matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.42)
+                matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.54)
                 name = "Unknown / Unregistered Face"
 
                 face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
                 if len(face_distances) > 0:
                     best_match_index = np.argmin(face_distances)
-                    if matches[best_match_index] and face_distances[best_match_index] < 0.42:
+                    if matches[best_match_index] and face_distances[best_match_index] < 0.54:
                         name = known_face_names[best_match_index]
                         mark_attendance(name)
 
@@ -849,8 +849,8 @@ def process_client_frame():
                     eq_gray = cv2.equalizeHist(gray_small)
                     face_roi = cv2.resize(eq_gray[sy:sy+sfh, sx:sx+sfw], (200, 200))
                     label_id, confidence = lbph_recognizer.predict(face_roi)
-                    # Lower confidence in LBPH = better match. Threshold 60 guarantees strict face match
-                    if confidence < 60 and 0 <= label_id < len(known_face_names):
+                    # LBPH confidence < 85 provides reliable face identification
+                    if confidence < 85 and 0 <= label_id < len(known_face_names):
                         matched_name = known_face_names[label_id]
 
                 if matched_name:
