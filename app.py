@@ -815,13 +815,20 @@ def process_client_frame():
             for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
                 matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.54)
                 name = "Unknown / Unregistered Face"
+                is_match = False
+                match_pct = 0
 
                 face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
                 if len(face_distances) > 0:
                     best_match_index = np.argmin(face_distances)
-                    if matches[best_match_index] and face_distances[best_match_index] < 0.54:
+                    best_dist = face_distances[best_match_index]
+                    if matches[best_match_index] and best_dist < 0.54:
                         name = known_face_names[best_match_index]
+                        is_match = True
+                        match_pct = int(max(0, min(100, (1.0 - best_dist) * 100)))
                         mark_attendance(name)
+
+                status_text = f"MATCH: {name} ({match_pct}%)" if is_match else "UNMATCH: Unknown Face"
 
                 # Scale coordinates back to original size (2x)
                 top_orig = top * 2
@@ -831,6 +838,9 @@ def process_client_frame():
 
                 detected_faces.append({
                     "name": name,
+                    "is_match": is_match,
+                    "status_text": status_text,
+                    "confidence_pct": match_pct,
                     "top": top_orig,
                     "right": right_orig,
                     "bottom": bottom_orig,
@@ -844,18 +854,23 @@ def process_client_frame():
             for (sx, sy, sfw, sfh) in faces:
                 name = "Unknown / Unregistered Face"
                 matched_name = None
+                is_match = False
+                match_pct = 0
 
                 if lbph_trained and lbph_recognizer is not None and len(known_face_names) > 0:
                     eq_gray = cv2.equalizeHist(gray_small)
                     face_roi = cv2.resize(eq_gray[sy:sy+sfh, sx:sx+sfw], (200, 200))
                     label_id, confidence = lbph_recognizer.predict(face_roi)
-                    # LBPH confidence < 85 provides reliable face identification
                     if confidence < 85 and 0 <= label_id < len(known_face_names):
                         matched_name = known_face_names[label_id]
+                        is_match = True
+                        match_pct = int(max(0, min(100, (1.0 - (confidence / 100.0)) * 100)))
 
                 if matched_name:
                     name = matched_name
                     mark_attendance(name)
+
+                status_text = f"MATCH: {name} ({match_pct}%)" if is_match else "UNMATCH: Unknown Face"
 
                 x = sx * 2
                 y = sy * 2
@@ -864,6 +879,9 @@ def process_client_frame():
 
                 detected_faces.append({
                     "name": name,
+                    "is_match": is_match,
+                    "status_text": status_text,
+                    "confidence_pct": match_pct,
                     "top": int(y),
                     "right": int(x + fw),
                     "bottom": int(y + fh),

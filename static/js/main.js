@@ -334,18 +334,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.success && data.faces) {
                         data.faces.forEach(f => {
                             const [bx, by, bw, bh] = f.box || [f.left, f.top, f.right - f.left, f.bottom - f.top];
-                            const isMatch = f.name && f.name !== 'Unknown' && f.name !== 'Face Detected';
+                            const isMatch = f.is_match || (f.name && !f.name.includes('Unknown') && !f.name.includes('Scanning') && !f.name.includes('Detected'));
 
-                            // Draw high-power AI targeting reticle
-                            ctx.strokeStyle = isMatch ? '#10B981' : '#38BDF8';
+                            // Draw AI reticle border (Green for MATCH, Red for UNMATCH)
+                            ctx.strokeStyle = isMatch ? '#10B981' : '#EF4444';
                             ctx.lineWidth = 2;
                             ctx.strokeRect(bx, by, bw, bh);
 
                             // Draw glowing corners
-                            const cornerLen = Math.min(bw, bh) * 0.2;
-                            ctx.strokeStyle = isMatch ? '#34D399' : '#0EA5E9';
+                            const cornerLen = Math.min(bw, bh) * 0.22;
+                            ctx.strokeStyle = isMatch ? '#34D399' : '#F87171';
                             ctx.lineWidth = 4;
-                            
+
                             // Top-Left corner
                             ctx.beginPath();
                             ctx.moveTo(bx, by + cornerLen);
@@ -361,14 +361,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             ctx.stroke();
 
                             // Label Badge
-                            const labelText = isMatch ? `MATCH: ${f.name}` : (f.name || 'SCANNING...');
-                            ctx.fillStyle = isMatch ? 'rgba(16, 185, 129, 0.9)' : 'rgba(14, 165, 233, 0.9)';
-                            const labelWidth = Math.max(120, ctx.measureText(labelText).width + 16);
-                            ctx.fillRect(bx, Math.max(0, by - 24), labelWidth, 22);
+                            const pctText = f.confidence_pct ? ` (${f.confidence_pct}%)` : '';
+                            const labelText = isMatch ? `✔ MATCH: ${f.name}${pctText}` : `✖ UNMATCH: Unknown Face`;
+                            ctx.fillStyle = isMatch ? 'rgba(16, 185, 129, 0.95)' : 'rgba(239, 68, 68, 0.95)';
+                            const labelWidth = Math.max(160, ctx.measureText(labelText).width + 20);
+                            ctx.fillRect(bx, Math.max(0, by - 26), labelWidth, 24);
 
                             ctx.fillStyle = '#FFFFFF';
                             ctx.font = '700 12px Inter, sans-serif';
-                            ctx.fillText(labelText, bx + 6, Math.max(14, by - 8));
+                            ctx.fillText(labelText, bx + 8, Math.max(16, by - 9));
 
                             if (isMatch) {
                                 fetchAttendanceData();
