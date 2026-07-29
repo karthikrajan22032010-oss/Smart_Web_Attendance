@@ -993,6 +993,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const btnClearAllAttendance = document.getElementById('btnClearAllAttendance');
+    if (btnClearAllAttendance) {
+        btnClearAllAttendance.addEventListener('click', async () => {
+            if (!confirm("Are you sure you want to CLEAR ALL attendance logs and present data for this class?")) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/clear_all_attendance', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showToast(data.message || "Cleared all attendance logs!", 'success');
+                    fetchAttendanceData();
+                } else {
+                    showToast(data.message || "Failed to clear attendance.", 'danger');
+                }
+            } catch (err) {
+                showToast("Error clearing attendance records.", 'danger');
+            }
+        });
+    }
+
     // Select All / Unselect All
     const btnSelectAllNames = document.getElementById('btnSelectAllNames');
     const btnUnselectAllNames = document.getElementById('btnUnselectAllNames');

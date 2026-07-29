@@ -813,13 +813,13 @@ def process_client_frame():
             face_encodings = face_recognition.face_encodings(rgb_small, face_locations)
 
             for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-                matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.5)
-                name = "Unknown"
+                matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.42)
+                name = "Unknown / Unregistered Face"
 
                 face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
                 if len(face_distances) > 0:
                     best_match_index = np.argmin(face_distances)
-                    if matches[best_match_index]:
+                    if matches[best_match_index] and face_distances[best_match_index] < 0.42:
                         name = known_face_names[best_match_index]
                         mark_attendance(name)
 
@@ -840,31 +840,22 @@ def process_client_frame():
         else:
             gray_small = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
             faces = safe_detect_faces(gray_small, scaleFactor=1.1, minNeighbors=3, minSize=(20, 20))
-            
-            roster_list = load_class_roster()
-            roster_names = [item['name'] if isinstance(item, dict) else str(item) for item in roster_list]
 
             for (sx, sy, sfw, sfh) in faces:
-                name = "Scanning Face..."
+                name = "Unknown / Unregistered Face"
                 matched_name = None
 
                 if lbph_trained and lbph_recognizer is not None and len(known_face_names) > 0:
                     eq_gray = cv2.equalizeHist(gray_small)
                     face_roi = cv2.resize(eq_gray[sy:sy+sfh, sx:sx+sfw], (200, 200))
                     label_id, confidence = lbph_recognizer.predict(face_roi)
-                    if confidence < 160 and 0 <= label_id < len(known_face_names):
+                    # Lower confidence in LBPH = better match. Threshold 60 guarantees strict face match
+                    if confidence < 60 and 0 <= label_id < len(known_face_names):
                         matched_name = known_face_names[label_id]
-                    elif 0 <= label_id < len(known_face_names):
-                        matched_name = known_face_names[label_id]
-
-                if not matched_name and roster_names:
-                    matched_name = roster_names[0]
 
                 if matched_name:
                     name = matched_name
                     mark_attendance(name)
-                else:
-                    name = "Face Detected"
 
                 x = sx * 2
                 y = sy * 2
@@ -1527,9 +1518,36 @@ def delete_student():
 
     # 5. Reload in-memory face encodings immediately
     load_known_faces()
+    _attendance_api_cache.clear()
     log_activity(f"Teacher totally deleted student '{name}' and purged all reference data & logs.", "warning")
 
     return jsonify({"success": True, "message": f"Successfully removed '{name}' from class & purged all data!"})
+
+
+@app.route('/api/clear_all_attendance', methods=['POST'])
+def clear_all_attendance():
+    """API to clear/reset all attendance logs and present data for the active class account."""
+    try:
+        code = get_class_code()
+        target_csv = get_class_csv_path()
+        if os.path.exists(target_csv):
+            with open(target_csv, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Class_Code', 'Name', 'Date', 'In_Time', 'Out_Time', 'Status', 'Morning_Break', 'Lunch_Break', 'Evening_Break', 'Remarks', 'Updated_At'])
+
+        db_path = get_db_path()
+        if os.path.exists(db_path):
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM attendance_logs")
+            conn.commit()
+            conn.close()
+
+        _attendance_api_cache.clear()
+        log_activity(f"All attendance logs and present data cleared for class {code}.", "warning")
+        return jsonify({"success": True, "message": f"Successfully cleared all attendance logs for class {code}!"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error clearing attendance logs: {e}"}), 500
 
 
 # --- Class Student Roster & Template APIs ---
