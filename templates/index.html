@@ -178,8 +178,84 @@
 
         <!-- POSITION 1: DAILY ATTENDANCE & LIVE SCANNER -->
         <div class="tab-content active" id="posDaily">
+            <!-- EXECUTIVE HOD WELCOME GREETING & SYSTEM FEATURES BANNER -->
+            <div class="hod-welcome-card" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.98)); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 18px; padding: 20px 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px); margin-bottom: 24px; position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -30px; right: -30px; width: 140px; height: 140px; background: radial-gradient(circle, rgba(56, 189, 248, 0.25), transparent 70%); pointer-events: none;"></div>
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #38bdf8, #0284c7); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff; box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px;">
+                                Welcome Respected HOD & Faculty
+                                <span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700;">ECE Department</span>
+                            </h3>
+                            <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 0.88rem; font-weight: 500;">
+                                Smart Web-Based Biometric Face Recognition & Classroom Surveillance System • <strong>Designed by MAYANDI KARTHIK RAJAN</strong>
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnToggleHodFeatures" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; padding: 8px 16px; border-radius: 12px; font-weight: 600; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);">
+                        <i class="fa-solid fa-circle-info"></i> View A-to-Z System Features <i class="fa-solid fa-chevron-down" id="hodChevron"></i>
+                    </button>
+                </div>
+
+                <!-- Collapsible A-to-Z Feature Grid -->
+                <div id="hodFeaturesCollapse" style="display: none; margin-top: 20px; padding-top: 18px; border-top: 1px solid rgba(148, 163, 184, 0.15);">
+                    <h4 style="color: #38bdf8; font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fa-solid fa-cubes text-warning"></i> Comprehensive A-to-Z Technical Architecture
+                    </h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+                        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-camera-retro text-info" style="font-size: 20px; margin-top: 2px;"></i>
+                            <div>
+                                <strong style="color: #e2e8f0; font-size: 0.88rem; display: block;">Real-Time AI Face Scanner</strong>
+                                <span style="color: #94a3b8; font-size: 0.8rem; line-height: 1.4; display: block;">MediaPipe & OpenCV deep learning face detection operating at 60 FPS.</span>
+                            </div>
+                        </div>
+                        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-shield-halved text-success" style="font-size: 20px; margin-top: 2px;"></i>
+                            <div>
+                                <strong style="color: #e2e8f0; font-size: 0.88rem; display: block;">Strict Class & Account Isolation</strong>
+                                <span style="color: #94a3b8; font-size: 0.8rem; line-height: 1.4; display: block;">Isolated data & models per Class ID (ECE 2nd Year / ECE 3rd Year) with user_id keys.</span>
+                            </div>
+                        </div>
+                        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-wand-magic-sparkles text-warning" style="font-size: 20px; margin-top: 2px;"></i>
+                            <div>
+                                <strong style="color: #e2e8f0; font-size: 0.88rem; display: block;">30x Multi-Angle Biometric Augmentation</strong>
+                                <span style="color: #94a3b8; font-size: 0.8rem; line-height: 1.4; display: block;">Generates 30 rotational, contrast, and brightness facial variations per student photo.</span>
+                            </div>
+                        </div>
+                        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-database text-purple" style="font-size: 20px; margin-top: 2px;"></i>
+                            <div>
+                                <strong style="color: #e2e8f0; font-size: 0.88rem; display: block;">Hybrid MongoDB & SQLite Cloud Sync</strong>
+                                <span style="color: #94a3b8; font-size: 0.8rem; line-height: 1.4; display: block;">Cloud database synchronization with Base64 auto-recovery for zero data loss on deployment.</span>
+                            </div>
+                        </div>
+                        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-user-pen text-primary" style="font-size: 20px; margin-top: 2px;"></i>
+                            <div>
+                                <strong style="color: #e2e8f0; font-size: 0.88rem; display: block;">Teacher Manual & OD Entry Manager</strong>
+                                <span style="color: #94a3b8; font-size: 0.8rem; line-height: 1.4; display: block;">On Duty (OD), Permission, and custom remarks management with instant table refresh.</span>
+                            </div>
+                        </div>
+                        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start;">
+                            <i class="fa-solid fa-chart-pie text-danger" style="font-size: 20px; margin-top: 2px;"></i>
+                            <div>
+                                <strong style="color: #e2e8f0; font-size: 0.88rem; display: block;">Monthly Analytics & Excel Export</strong>
+                                <span style="color: #94a3b8; font-size: 0.8rem; line-height: 1.4; display: block;">Attendance percentage counters, on-time analytics, and instant Excel report exports.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Stats Counter Cards -->
             <section class="stats-grid">
+
                 <div class="stat-card card-total tilt-card">
                     <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
                     <div class="stat-details">

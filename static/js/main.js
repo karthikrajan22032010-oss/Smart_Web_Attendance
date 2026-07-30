@@ -1868,10 +1868,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // HOD A-to-Z Features Collapse Toggle
+    const btnToggleHodFeatures = document.getElementById('btnToggleHodFeatures');
+    const hodFeaturesCollapse = document.getElementById('hodFeaturesCollapse');
+    const hodChevron = document.getElementById('hodChevron');
+    if (btnToggleHodFeatures && hodFeaturesCollapse) {
+        btnToggleHodFeatures.addEventListener('click', () => {
+            const isHidden = hodFeaturesCollapse.style.display === 'none' || !hodFeaturesCollapse.style.display;
+            hodFeaturesCollapse.style.display = isHidden ? 'block' : 'none';
+            if (hodChevron) {
+                hodChevron.className = isHidden ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+            }
+        });
+    }
+
     checkCookieConsent();
 
     // Check Initial Session
     checkAuthSession();
     setInterval(fetchAttendanceData, 15000);  // Poll attendance every 15s (was 2.5s)
 });
+
 
