@@ -544,11 +544,11 @@
             </div>
             <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
                 
-                <!-- Section 1: Add New Student Details & Reference Photo -->
+                <!-- Section 1: Add or Update Student Details & Reference Photo -->
                 <form id="registerFaceForm" enctype="multipart/form-data" style="margin: 0;">
                     <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px;">
                         <h4 style="font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-user-plus"></i> Add Student to Class & Reference Face Photo
+                            <i class="fa-solid fa-user-pen"></i> Add / Update Student & Reference Face Photo
                         </h4>
                         <div class="form-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <div class="form-group" style="flex: 1.2; min-width: 150px;">
@@ -560,15 +560,16 @@
                                 <input type="text" id="registerRollNo" placeholder="Roll No / ID">
                             </div>
                             <div class="form-group" style="flex: 1.2; min-width: 150px;">
-                                <label for="faceImage">Face Photo (Opt)</label>
+                                <label for="faceImage">Face Photo (Upload / Update)</label>
                                 <input type="file" id="faceImage" accept="image/*">
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary btn-sm" style="margin-top: 8px; width: 100%;">
-                            <i class="fa-solid fa-floppy-disk"></i> Save Student Details & Add to Student Name List
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Save / Update Student Details & Face Photo
                         </button>
                     </div>
                 </form>
+
 
                 <!-- Section 3: STUDENT NAME LIST Box & Delete Student Manager -->
                 <div class="manage-roster-list-section" style="background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px;">

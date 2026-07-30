@@ -56,9 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let cachedAttendance = [];
     let cachedMonthlyData = { records: [], names: [], dates: [] };
     let cachedRegisteredStudents = [];
+    let cachedRoster = [];
+    let currentClassCode = 'ECE2';
 
     let cachedStudentStats = {};
     let serverTimeOffsetMinutes = 0;
+
 
     // 1. Live Digital Clock & Date
     function updateClock() {
@@ -306,6 +309,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isClientFrameProcessing = false;
     let _lastAttendanceFetchTime = 0;
     let _consecutiveErrors = 0;
+    let clientFrameTimer = null;
+    const FRAME_THROTTLE_MS = 250; // Throttle to ~4 FPS to avoid network & server overload
 
     function startClientFrameProcessor() {
         stopClientFrameProcessor();
@@ -315,10 +320,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const ctx = clientCanvas.getContext('2d');
 
-        clientFrameInterval = setInterval(async () => {
-            if (isClientFrameProcessing || !isCameraActive || !useClientDeviceCam || clientVideo.paused || clientVideo.ended) return;
+        async function processFrameLoop() {
+            if (!isCameraActive || !useClientDeviceCam || clientVideo.paused || clientVideo.ended) {
+                stopClientFrameProcessor();
+                return;
+            }
 
-            if (clientVideo.videoWidth > 0 && clientVideo.videoHeight > 0) {
+            // Gated Lock: Only send frame if previous frame request has completed
+            if (!isClientFrameProcessing && clientVideo.videoWidth > 0 && clientVideo.videoHeight > 0) {
                 isClientFrameProcessing = true;
                 clientCanvas.width = 480;
                 clientCanvas.height = 360;
@@ -399,15 +408,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     isClientFrameProcessing = false;
                 }
             }
-        }, 900);  // 900ms interval — smooth scanning without server flooding
+
+            if (isCameraActive && useClientDeviceCam) {
+                clientFrameTimer = setTimeout(processFrameLoop, FRAME_THROTTLE_MS);
+            }
+        }
+
+        processFrameLoop();
     }
 
     function stopClientFrameProcessor() {
-        if (clientFrameInterval) {
+        if (clientFrameTimer) {
+            clearTimeout(clientFrameTimer);
+            clientFrameTimer = null;
+        }
+        if (typeof clientFrameInterval !== 'undefined' && clientFrameInterval) {
             clearInterval(clientFrameInterval);
             clientFrameInterval = null;
         }
+        isClientFrameProcessing = false;
     }
+
 
     function toggleCamera() {
         if (isCameraActive) {
@@ -873,6 +894,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             cachedAttendance = data.attendance || [];
             cachedRegisteredStudents = data.registered_students || [];
+            cachedRoster = data.roster || [];
+            currentClassCode = data.class_code || 'ECE2';
             cachedStudentStats = data.student_stats || {};
 
             if (data.current_time_info && data.current_time_info.offset_minutes !== undefined) {
@@ -929,7 +952,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    // Function to render registered students list with Delete buttons inside Modal 2
+    // Function to render registered students list with face photos & Delete buttons inside Modal 2
     function renderRegisteredStudentsManageList() {
         const container = document.getElementById('registeredStudentsManageList');
         const badge = document.getElementById('registeredStudentsCountBadge');
@@ -944,16 +967,55 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        container.innerHTML = cachedRegisteredStudents.map(student => {
+        container.innerHTML = cachedRegisteredStudents.map(studentName => {
+            const rosterItem = cachedRoster.find(r => (typeof r === 'object' && r.name ? r.name.toLowerCase() : String(r).toLowerCase()) === studentName.toLowerCase());
+            const photoName = (rosterItem && typeof rosterItem === 'object') ? rosterItem.photo : null;
+            const rollNo = (rosterItem && typeof rosterItem === 'object' && rosterItem.roll_no && rosterItem.roll_no !== '-') ? rosterItem.roll_no : '';
+
+            const avatarHtml = photoName ? 
+                `<img src="/api/student_photo/${encodeURIComponent(currentClassCode)}/${encodeURIComponent(photoName)}" alt="${escapeHtml(studentName)}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--primary);" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                 <i class="fa-solid fa-circle-user text-primary" style="font-size: 24px; display: none; margin-right: 6px;"></i>` :
+                `<i class="fa-solid fa-circle-user text-primary" style="font-size: 24px; margin-right: 6px;"></i>`;
+
+            const rollText = rollNo ? `<span style="font-size: 11px; color: var(--text-muted); margin-left: 6px;">(Roll: ${escapeHtml(rollNo)})</span>` : '';
+
             return `
                 <div class="student-manage-item" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 8px;">
-                    <span style="font-weight: 600; color: var(--text-main); font-size: 13px;"><i class="fa-solid fa-circle-user text-primary" style="margin-right: 6px;"></i> ${escapeHtml(student)}</span>
-                    <button type="button" class="btn btn-danger btn-xs btnDeleteStudent" data-name="${escapeHtml(student)}" title="Delete student and remove face recognition model">
-                        <i class="fa-solid fa-trash-can"></i> Delete
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        ${avatarHtml}
+                        <span style="font-weight: 600; color: var(--text-main); font-size: 13px;">${escapeHtml(studentName)} ${rollText}</span>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button type="button" class="btn btn-secondary btn-xs btnUpdateStudentPhoto" data-name="${escapeHtml(studentName)}" data-roll="${escapeHtml(rollNo)}" title="Upload a new reference face photo for ${escapeHtml(studentName)}">
+                            <i class="fa-solid fa-camera-rotate"></i> Update Photo
+                        </button>
+                        <button type="button" class="btn btn-danger btn-xs btnDeleteStudent" data-name="${escapeHtml(studentName)}" title="Delete student and remove face recognition model">
+                            <i class="fa-solid fa-trash-can"></i> Delete
+                        </button>
+                    </div>
                 </div>
             `;
         }).join('');
+
+
+        // Attach Update Photo Click Handler
+        container.querySelectorAll('.btnUpdateStudentPhoto').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const name = e.currentTarget.getAttribute('data-name');
+                const roll = e.currentTarget.getAttribute('data-roll') || '';
+                const nameInput = document.getElementById('registerName');
+                const rollInput = document.getElementById('registerRollNo');
+                const photoInput = document.getElementById('faceImage');
+
+                if (nameInput) nameInput.value = name;
+                if (rollInput) rollInput.value = roll;
+                if (photoInput) {
+                    photoInput.focus();
+                    photoInput.click();
+                }
+                showToast(`Ready to update photo for "${name}". Select a new face photo and click Save!`, 'info');
+            });
+        });
 
         // Attach Delete Student Click Handler
         container.querySelectorAll('.btnDeleteStudent').forEach(btn => {
@@ -985,6 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+
     }
 
     const btnClearAllAttendance = document.getElementById('btnClearAllAttendance');
