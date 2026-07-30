@@ -1648,10 +1648,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(result.message || 'Face registered successfully!', 'success');
                     registerFaceForm.reset();
                     fetchRosterData();
-                    fetchAttendanceData();
+                    await fetchAttendanceData();
+                    renderRegisteredStudentsManageList();
                 } else {
                     showToast(result.message || 'Failed to register face photo.', 'danger');
                 }
+
             } catch (err) {
                 showToast('Error uploading face registration.', 'danger');
             }

@@ -422,7 +422,23 @@ def safe_detect_faces(img_gray, bgr_frame=None, scaleFactor=1.1, minNeighbors=3,
 
 
 
+def load_image_cv2(filepath):
+    """Robust image loader using PIL + NumPy (handles WhatsApp images, WebP, HEIC, JPEG, PNG, Unicode paths)."""
+    try:
+        from PIL import Image
+        pil_img = Image.open(filepath)
+        if pil_img.mode != 'RGB':
+            pil_img = pil_img.convert('RGB')
+        return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+    except Exception:
+        try:
+            return cv2.imread(filepath)
+        except Exception:
+            return None
+
+
 def generate_augmented_face_samples(face_gray):
+
     """
     Generates 30+ high-precision augmented facial training samples across multiple
     rotations (-15° to +15°), selfie mirroring, brightness shifts, contrast levels, and scale transforms.
@@ -554,8 +570,9 @@ def load_known_faces():
                         except Exception as e:
                             print(f"[ERROR] Failed to process face image {filename}: {e}")
                     else:
-                        img_bgr = cv2.imread(filepath)
+                        img_bgr = load_image_cv2(filepath)
                         if img_bgr is not None:
+
                             img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
                             clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
                             enhanced_gray = clahe.apply(img_gray)
