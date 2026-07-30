@@ -192,10 +192,36 @@ def save_class_roster(roster_list):
         except Exception as e:
             print(f"[ERROR] Saving roster {rpath}: {e}")
 
-# Ensure directories exist if disk storage is enabled
+def init_all_class_directories():
+    """Pre-creates all class folders (ECE2, ECE3, CLASS1) in workspace root known_faces and attendance_data."""
+    default_codes = ["ECE2", "ECE3", "CLASS1"]
+    for acc in CLASS_ACCOUNTS.values():
+        if acc.get("code") and acc["code"] not in default_codes:
+            default_codes.append(acc["code"])
+            
+    for code in default_codes:
+        root_dir = os.path.join(os.getcwd(), "known_faces", code)
+        custom_dir = os.path.join(CUSTOM_STORAGE_DIR, "known_faces", code)
+        try:
+            os.makedirs(root_dir, exist_ok=True)
+            os.makedirs(custom_dir, exist_ok=True)
+            gitkeep_root = os.path.join(root_dir, ".gitkeep")
+            gitkeep_custom = os.path.join(custom_dir, ".gitkeep")
+            if not os.path.exists(gitkeep_root):
+                with open(gitkeep_root, 'w') as f:
+                    f.write("# Class Face Directory\n")
+            if not os.path.exists(gitkeep_custom):
+                with open(gitkeep_custom, 'w') as f:
+                    f.write("# Class Face Directory\n")
+        except Exception as err:
+            print(f"[WARNING] Pre-creating class directory error for {code}: {err}")
+
+# Ensure all class directories exist on startup
 if ALLOW_DISK_STORAGE:
+    init_all_class_directories()
     get_known_faces_dir()
     get_recordings_dir()
+
 
 # MongoDB Database Configuration
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
