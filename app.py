@@ -489,7 +489,7 @@ def generate_augmented_face_samples(face_gray):
 
 
 def load_known_faces():
-    """Loads and encodes all images stored in active class known_faces directory."""
+    """Loads and encodes face images STRICTLY for the active class session (zero cross-class leaks)."""
     global known_face_encodings, known_face_names, lbph_recognizer, lbph_trained
     known_face_encodings = []
     known_face_names = []
@@ -501,48 +501,42 @@ def load_known_faces():
     valid_extensions = ('.jpg', '.jpeg', '.png')
     name_to_id = {}
     
-    class_faces_dir = get_known_faces_dir()
-    parent_faces_dir = os.path.join(CUSTOM_STORAGE_DIR, "known_faces")
+    code = get_class_code()
+    root_class_dir = os.path.join(os.getcwd(), "known_faces", code)
+    custom_class_dir = os.path.join(CUSTOM_STORAGE_DIR, "known_faces", code)
+    
+    os.makedirs(root_class_dir, exist_ok=True)
+    os.makedirs(custom_class_dir, exist_ok=True)
 
-    # Cloud Deployment Persistence: Restore missing photos from roster JSON Base64 if needed
+    # 1. Cloud Deployment Persistence: Restore missing photos from active class roster JSON Base64 if needed
     try:
         roster_items = load_class_roster()
         for r_item in roster_items:
             if isinstance(r_item, dict) and r_item.get('photo') and r_item.get('photo_b64'):
                 photo_fname = r_item['photo']
-                class_photo_path = os.path.join(class_faces_dir, photo_fname)
-                root_photo_path = os.path.join(os.getcwd(), "known_faces", get_class_code(), photo_fname)
-                if not os.path.exists(class_photo_path) or not os.path.exists(root_photo_path):
-                    import base64
-                    img_bytes = base64.b64decode(r_item['photo_b64'])
-                    for p_path in [class_photo_path, root_photo_path]:
-                        os.makedirs(os.path.dirname(p_path), exist_ok=True)
-                        if not os.path.exists(p_path):
-                            with open(p_path, 'wb') as pf:
-                                pf.write(img_bytes)
-                    print(f"[CLOUD-RECOVERY] Auto-restored student photo from Base64 for deployment: {photo_fname}")
+                for p_dir in [root_class_dir, custom_class_dir]:
+                    p_path = os.path.join(p_dir, photo_fname)
+                    if not os.path.exists(p_path):
+                        import base64
+                        img_bytes = base64.b64decode(r_item['photo_b64'])
+                        with open(p_path, 'wb') as pf:
+                            pf.write(img_bytes)
+                        print(f"[CLOUD-RECOVERY: {code}] Restored photo from Base64: {photo_fname}")
     except Exception as restore_err:
         print(f"[WARNING] Cloud photo restore error: {restore_err}")
 
-    target_dirs = []
-    if os.path.exists(class_faces_dir):
-        target_dirs.append(class_faces_dir)
-    if os.path.exists(parent_faces_dir) and parent_faces_dir not in target_dirs:
-        target_dirs.append(parent_faces_dir)
-
+    # 2. Collect photos STRICTLY from active class folders (ONLY root_class_dir and custom_class_dir)
+    target_dirs = set([root_class_dir, custom_class_dir])
     processed_files = set()
 
-
     for target_dir in target_dirs:
-        for root, dirs, files in os.walk(target_dir):
-            if target_dir == parent_faces_dir and class_faces_dir != parent_faces_dir:
-                dirs[:] = [d for d in dirs if os.path.join(root, d) != class_faces_dir]
+        if os.path.exists(target_dir):
+            for filename in os.listdir(target_dir):
+                filepath = os.path.join(target_dir, filename)
+                if not os.path.isfile(filepath) or filepath in processed_files:
+                    continue
 
-            for filename in files:
                 if filename.lower().endswith(valid_extensions):
-                    filepath = os.path.join(root, filename)
-                    if filepath in processed_files:
-                        continue
                     processed_files.add(filepath)
 
                     raw_stem = os.path.splitext(filename)[0]
@@ -564,15 +558,11 @@ def load_known_faces():
                             encodings = face_recognition.face_encodings(image)
                             if encodings:
                                 known_face_encodings.append(encodings[0])
-                                print(f"[INFO] Loaded dlib face encoding for: {name} ({filename})")
-                            else:
-                                print(f"[WARNING] No face found in image: {filename}")
-                        except Exception as e:
-                            print(f"[ERROR] Failed to process face image {filename}: {e}")
+                        except Exception:
+                            pass
                     else:
                         img_bgr = load_image_cv2(filepath)
                         if img_bgr is not None:
-
                             img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
                             clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
                             enhanced_gray = clahe.apply(img_gray)
@@ -586,27 +576,25 @@ def load_known_faces():
                                         faces_data.append(s)
                                         labels_data.append(label_idx)
                             
-                            # Also add whole image augmented samples to guarantee 100% crop invariance
                             full_aug_samples = generate_augmented_face_samples(enhanced_gray)
                             for s in full_aug_samples:
                                 faces_data.append(s)
                                 labels_data.append(label_idx)
 
-                            print(f"[INFO] Prepared enterprise 30x augmented biometric training samples for: {name} (Label ID {label_idx}, {filename})")
-
+                            print(f"[CLASS-ISOLATED: {code}] Prepared biometric training samples for: {name} ({filename})")
 
     if not HAVE_FACE_RECOGNITION and len(faces_data) > 0:
         try:
             if hasattr(cv2, 'face') and hasattr(cv2.face, 'LBPHFaceRecognizer_create'):
-                # Enterprise High-Precision LBPH parameters (radius=1, neighbors=8, grid=8x8)
                 lbph_recognizer = cv2.face.LBPHFaceRecognizer_create(radius=1, neighbors=8, grid_x=8, grid_y=8)
                 lbph_recognizer.train(faces_data, np.array(labels_data))
                 lbph_trained = True
-                print(f"[INFO] Successfully trained Enterprise OpenCV LBPH Face Recognizer with {len(faces_data)} augmented samples across {len(known_face_names)} unique student names.")
+                print(f"[INFO] Successfully trained Enterprise OpenCV LBPH Face Recognizer for Class [{code}] with {len(faces_data)} samples across {len(known_face_names)} student names.")
         except Exception as e:
             print(f"[ERROR] Failed to train LBPH face recognizer: {e}")
 
-    print(f"[INFO] Total registered student faces loaded: {len(known_face_names)} ({known_face_names})")
+    print(f"[INFO] Active Class [{code}] Loaded student faces: {len(known_face_names)} ({known_face_names})")
+
 
 load_known_faces()
 
@@ -1294,7 +1282,11 @@ def login():
     session['class_name'] = account['class_name']
     session['class_code'] = account['code']
 
+    load_known_faces()
+    _attendance_api_cache.clear()
+
     log_activity(f"Class Logged In: {account['class_name']} ({matched_id})", "success")
+
     return jsonify({
         "success": True,
         "message": f"Welcome to {account['class_name']}!",
