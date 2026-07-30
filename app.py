@@ -668,13 +668,13 @@ def sync_sqlite_attendance(data_dict):
 
 
 def sync_mongo(data_dict):
-    """Syncs single attendance record dictionary to MongoDB & SQLite with class isolation."""
+    """Syncs single attendance record dictionary to MongoDB & SQLite with strict academicYear isolation."""
     sync_sqlite_attendance(data_dict)
     if USE_MONGO and db is not None:
         try:
             code = get_class_code()
-            coll = db[f"attendance_logs_{code}"]
-            query = {"name": data_dict["Name"], "date": data_dict["Date"]}
+            coll = db["attendance_logs"]
+            query = {"name": data_dict["Name"], "date": data_dict["Date"], "academicYear": code}
             update_doc = {
                 "$set": {
                     "name": data_dict["Name"],
@@ -688,12 +688,15 @@ def sync_mongo(data_dict):
                     "remarks": data_dict.get("Remarks", "-"),
                     "class_name": session.get("class_name", "General Class"),
                     "class_code": code,
+                    "academicYear": code,  # Strictly set to 'ECE2' or 'ECE3'
                     "updated_at": get_current_now()
                 }
             }
             coll.update_one(query, update_doc, upsert=True)
+            db[f"attendance_logs_{code}"].update_one({"name": data_dict["Name"], "date": data_dict["Date"], "academicYear": code}, update_doc, upsert=True)
         except Exception as mongo_err:
             print(f"[WARNING] MongoDB Sync Error: {mongo_err}")
+
 
 
 def mark_attendance(name, custom_time=None, custom_status=None, remarks=None, custom_date=None):
@@ -1833,8 +1836,20 @@ def delete_student():
     ]
     save_class_roster(new_roster)
 
-    # 5. Reload in-memory face encodings immediately
+    # 5. Total remove from MongoDB photos and attendance_logs collections filtered strictly by academicYear
+    if USE_MONGO and db is not None:
+        try:
+            code = get_class_code()
+            db.photos.delete_many({"name": name, "academicYear": code})
+            db.attendance_logs.delete_many({"name": name, "academicYear": code})
+            db[f"attendance_logs_{code}"].delete_many({"name": name, "academicYear": code})
+            print(f"[MONGODB-DELETE] Removed photos and logs for {name} with academicYear='{code}'")
+        except Exception as mongo_del_err:
+            print(f"[WARNING] MongoDB delete student error: {mongo_del_err}")
+
+    # 6. Reload in-memory face encodings immediately
     load_known_faces()
+
     _attendance_api_cache.clear()
     log_activity(f"Teacher totally deleted student '{name}' and purged all reference data & logs.", "warning")
 
