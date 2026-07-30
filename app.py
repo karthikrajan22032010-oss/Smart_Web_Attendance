@@ -262,11 +262,12 @@ def init_sqlite_db(class_code=None):
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
-        # Create Attendance Logs Table
+        # Create Attendance Logs Table linked to user account ID
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS attendance_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 class_code TEXT NOT NULL,
+                user_id TEXT NOT NULL,
                 name TEXT NOT NULL,
                 date TEXT NOT NULL,
                 in_time TEXT DEFAULT '-',
@@ -277,22 +278,24 @@ def init_sqlite_db(class_code=None):
                 evening_break TEXT DEFAULT '-',
                 remarks TEXT DEFAULT '-',
                 updated_at TEXT,
-                UNIQUE(class_code, name, date)
+                UNIQUE(class_code, user_id, name, date)
             )
         ''')
         
-        # Create Registered Students Table
+        # Create Registered Students Table linked to user account ID
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS registered_students (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 class_code TEXT NOT NULL,
+                user_id TEXT NOT NULL,
                 name TEXT NOT NULL,
                 roll_no TEXT DEFAULT '-',
                 photo TEXT,
                 registered_at TEXT,
-                UNIQUE(class_code, name)
+                UNIQUE(class_code, user_id, name)
             )
         ''')
+
         
         conn.commit()
         conn.close()
@@ -629,18 +632,19 @@ load_known_faces()
 
 
 def sync_sqlite_attendance(data_dict):
-    """Syncs single attendance record to SQLite database."""
+    """Syncs single attendance record linked to active user account ID into SQLite database."""
     try:
         db_path = get_db_path()
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         code = get_class_code()
+        user_id = session.get('user_id', 'ECE 2YEAR@LAPC')
         
         cursor.execute('''
             INSERT INTO attendance_logs 
-            (class_code, name, date, in_time, out_time, status, morning_break, lunch_break, evening_break, remarks, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(class_code, name, date) DO UPDATE SET
+            (class_code, user_id, name, date, in_time, out_time, status, morning_break, lunch_break, evening_break, remarks, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(class_code, user_id, name, date) DO UPDATE SET
                 in_time=excluded.in_time,
                 out_time=excluded.out_time,
                 status=excluded.status,
@@ -651,6 +655,7 @@ def sync_sqlite_attendance(data_dict):
                 updated_at=excluded.updated_at
         ''', (
             code,
+            user_id,
             data_dict.get("Name", ""),
             data_dict.get("Date", ""),
             data_dict.get("In_Time", "-"),
@@ -670,15 +675,17 @@ def sync_sqlite_attendance(data_dict):
 
 
 def sync_mongo(data_dict):
-    """Syncs single attendance record dictionary to MongoDB & SQLite with strict academicYear isolation."""
+    """Syncs single attendance record dictionary to MongoDB & SQLite with user_id and academicYear isolation."""
     sync_sqlite_attendance(data_dict)
     if USE_MONGO and db is not None:
         try:
             code = get_class_code()
+            user_id = session.get('user_id', 'ECE 2YEAR@LAPC')
             coll = db["attendance_logs"]
-            query = {"name": data_dict["Name"], "date": data_dict["Date"], "academicYear": code}
+            query = {"user_id": user_id, "name": data_dict["Name"], "date": data_dict["Date"], "academicYear": code}
             update_doc = {
                 "$set": {
+                    "user_id": user_id,
                     "name": data_dict["Name"],
                     "date": data_dict["Date"],
                     "in_time": data_dict.get("In_Time", "-"),
@@ -690,14 +697,15 @@ def sync_mongo(data_dict):
                     "remarks": data_dict.get("Remarks", "-"),
                     "class_name": session.get("class_name", "General Class"),
                     "class_code": code,
-                    "academicYear": code,  # Strictly set to 'ECE2' or 'ECE3'
+                    "academicYear": code,
                     "updated_at": get_current_now()
                 }
             }
             coll.update_one(query, update_doc, upsert=True)
-            db[f"attendance_logs_{code}"].update_one({"name": data_dict["Name"], "date": data_dict["Date"], "academicYear": code}, update_doc, upsert=True)
+            db[f"attendance_logs_{code}"].update_one({"user_id": user_id, "name": data_dict["Name"], "date": data_dict["Date"], "academicYear": code}, update_doc, upsert=True)
         except Exception as mongo_err:
             print(f"[WARNING] MongoDB Sync Error: {mongo_err}")
+
 
 
 
@@ -1695,27 +1703,32 @@ def register_face():
 
 
         # MongoDB Photos Collection Insertion with academicYear
+        # MongoDB Photos Collection Insertion with user_id and academicYear
         if USE_MONGO and db is not None:
             try:
                 code = get_class_code()
+                user_id = session.get('user_id', 'ECE 2YEAR@LAPC')
                 photo_url = f"/api/student_photo/{code}/{filename_safe}" if filename_safe else None
                 update_doc = {
+                    "user_id": user_id,
                     "name": name,
                     "roll_no": roll_no,
                     "photoUrl": photo_url,
                     "academicYear": code,
+                    "class_code": code,
                     "photo": filename_safe,
                     "photo_b64": photo_b64,
                     "registered_at": get_current_now().strftime("%Y-%m-%d %H:%M:%S")
                 }
                 db.photos.update_one(
-                    {"name": name, "academicYear": code},
+                    {"user_id": user_id, "name": name, "academicYear": code},
                     {"$set": update_doc},
                     upsert=True
                 )
-                print(f"[MONGODB-PHOTO] Inserted photo record for {name} ({code})")
+                print(f"[MONGODB-PHOTO] Inserted photo record for {name} (User: {user_id}, Code: {code})")
             except Exception as err:
                 print(f"[WARNING] MongoDB face register error: {err}")
+
 
         load_known_faces()
         _attendance_api_cache.clear()
@@ -1736,11 +1749,16 @@ def get_photos_by_academic_year(academic_year):
     # 1. MongoDB Query if connected
     if USE_MONGO and db is not None:
         try:
-            cursor = db.photos.find({"academicYear": code}, {"_id": 0})
+            user_id = session.get('user_id', 'ECE 2YEAR@LAPC')
+            cursor = db.photos.find({"user_id": user_id, "academicYear": code}, {"_id": 0})
             results = list(cursor)
-            return jsonify({"success": True, "academicYear": code, "count": len(results), "photos": results})
+            if not results:
+                cursor = db.photos.find({"academicYear": code}, {"_id": 0})
+                results = list(cursor)
+            return jsonify({"success": True, "academicYear": code, "user_id": user_id, "count": len(results), "photos": results})
         except Exception as err:
             print(f"[WARNING] MongoDB photos query error: {err}")
+
 
     # 2. Local Class Roster JSON Query
     rpath = get_class_roster_path(code)
