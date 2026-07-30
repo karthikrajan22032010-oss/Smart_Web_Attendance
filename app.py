@@ -1663,16 +1663,26 @@ def register_face():
         save_class_roster(roster)
 
 
+        # MongoDB Photos Collection Insertion with academicYear
         if USE_MONGO and db is not None:
             try:
-                update_doc = {"name": name, "roll_no": roll_no, "registered_at": get_current_now()}
-                if filename_safe:
-                    update_doc["filename"] = filename_safe
-                db.registered_faces.update_one(
-                    {"name": name},
+                code = get_class_code()
+                photo_url = f"/api/student_photo/{code}/{filename_safe}" if filename_safe else None
+                update_doc = {
+                    "name": name,
+                    "roll_no": roll_no,
+                    "photoUrl": photo_url,
+                    "academicYear": code,
+                    "photo": filename_safe,
+                    "photo_b64": photo_b64,
+                    "registered_at": get_current_now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                db.photos.update_one(
+                    {"name": name, "academicYear": code},
                     {"$set": update_doc},
                     upsert=True
                 )
+                print(f"[MONGODB-PHOTO] Inserted photo record for {name} ({code})")
             except Exception as err:
                 print(f"[WARNING] MongoDB face register error: {err}")
 
@@ -1684,6 +1694,51 @@ def register_face():
     except Exception as general_err:
         print(f"[ERROR] register_face failed: {general_err}")
         return jsonify({"success": False, "message": f"Error registering face photo: {str(general_err)}"}), 500
+
+
+@app.route('/api/photos/<academic_year>', methods=['GET'])
+def get_photos_by_academic_year(academic_year):
+    """API returning all photos and student records for a specific academic year (e.g. db.photos.find({ academicYear: 'ECE2' }))."""
+    code = academic_year.upper()
+    results = []
+
+    # 1. MongoDB Query if connected
+    if USE_MONGO and db is not None:
+        try:
+            cursor = db.photos.find({"academicYear": code}, {"_id": 0})
+            results = list(cursor)
+            return jsonify({"success": True, "academicYear": code, "count": len(results), "photos": results})
+        except Exception as err:
+            print(f"[WARNING] MongoDB photos query error: {err}")
+
+    # 2. Local Class Roster JSON Query
+    rpath = get_class_roster_path(code)
+    if os.path.exists(rpath):
+        try:
+            with open(rpath, 'r', encoding='utf-8') as f:
+                roster_data = json.load(f)
+                for item in roster_data:
+                    if isinstance(item, dict):
+                        photo_fname = item.get('photo')
+                        photo_url = f"/api/student_photo/{code}/{photo_fname}" if photo_fname else None
+                        results.append({
+                            "name": item.get('name'),
+                            "roll_no": item.get('roll_no', '-'),
+                            "photoUrl": photo_url,
+                            "academicYear": code,
+                            "photo": photo_fname,
+                            "registered_at": item.get('added_at')
+                        })
+        except Exception as e:
+            print(f"[ERROR] Reading class roster JSON for {code}: {e}")
+
+    return jsonify({
+        "success": True,
+        "academicYear": code,
+        "count": len(results),
+        "photos": results
+    })
+
 
 
 @app.route('/api/student_photo/<class_code>/<filename>')
