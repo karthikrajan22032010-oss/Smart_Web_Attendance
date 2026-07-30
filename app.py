@@ -1373,7 +1373,32 @@ def get_attendance():
 
     logs = []
     student_stats = {}
-    if os.path.exists(target_csv) and os.path.getsize(target_csv) > 0:
+    mongo_fetched = False
+
+    if USE_MONGO and db is not None:
+        try:
+            mongo_docs = list(db.attendance_logs.find({"academicYear": code, "date": today_date}, {"_id": 0}))
+            if not mongo_docs and f"attendance_logs_{code}" in db.list_collection_names():
+                mongo_docs = list(db[f"attendance_logs_{code}"].find({"date": today_date}, {"_id": 0}))
+            
+            for doc in mongo_docs:
+                logs.append({
+                    "Class_Code": code,
+                    "Name": doc.get("name", ""),
+                    "Date": doc.get("date", today_date),
+                    "In_Time": doc.get("in_time", "-"),
+                    "Out_Time": doc.get("out_time", "-"),
+                    "Status": doc.get("status", "On Time"),
+                    "Morning_Break": doc.get("morning_break", "-"),
+                    "Lunch_Break": doc.get("lunch_break", "-"),
+                    "Evening_Break": doc.get("evening_break", "-"),
+                    "Remarks": doc.get("remarks", "-")
+                })
+            mongo_fetched = True
+        except Exception as m_err:
+            print(f"[WARNING] MongoDB attendance query error: {m_err}")
+
+    if not mongo_fetched and os.path.exists(target_csv) and os.path.getsize(target_csv) > 0:
         try:
             df = pd.read_csv(target_csv)
             for col in CSV_COLUMNS:
@@ -1382,6 +1407,7 @@ def get_attendance():
             
             today_df = df[df['Date'] == today_date]
             logs = today_df.to_dict(orient='records')
+
 
             roster_list = load_class_roster()
             roster_names = [item['name'] if isinstance(item, dict) else str(item) for item in roster_list]
