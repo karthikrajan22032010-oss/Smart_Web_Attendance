@@ -178,56 +178,55 @@
 
         <!-- POSITION 1: DAILY ATTENDANCE & LIVE SCANNER -->
         <div class="tab-content active" id="posDaily">
-            <!-- Stats Counter Cards -->
-            <section class="stats-grid">
-
-                <div class="stat-card card-total tilt-card">
-                    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
-                    <div class="stat-details">
-                        <span class="stat-title">Total Present Today</span>
-                        <h2 class="stat-number" id="statTotal">0</h2>
-                    </div>
-                </div>
-                <div class="stat-card card-ontime tilt-card">
-                    <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
-                    <div class="stat-details">
-                        <span class="stat-title">On Time</span>
-                        <h2 class="stat-number" id="statOnTime">0</h2>
-                    </div>
-                </div>
-                <div class="stat-card card-late tilt-card">
-                    <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                    <div class="stat-details">
-                        <span class="stat-title">Late Arrival</span>
-                        <h2 class="stat-number" id="statLate">0</h2>
-                    </div>
-                </div>
-                <div class="stat-card card-od tilt-card">
-                    <div class="stat-icon"><i class="fa-solid fa-id-badge"></i></div>
-                    <div class="stat-details">
-                        <span class="stat-title">OD (On Duty)</span>
-                        <h2 class="stat-number" id="statOD">0</h2>
-                    </div>
-                </div>
-                <div class="stat-card card-absent tilt-card">
-                    <div class="stat-icon"><i class="fa-solid fa-user-xmark"></i></div>
-                    <div class="stat-details">
-                        <span class="stat-title">Total Absent Today</span>
-                        <h2 class="stat-number" id="statAbsent">0</h2>
-                    </div>
-                </div>
-                <div class="stat-card card-enrolled tilt-card">
-                    <div class="stat-icon"><i class="fa-solid fa-id-card"></i></div>
-                    <div class="stat-details">
-                        <span class="stat-title">Enrolled Students</span>
-                        <h2 class="stat-number" id="statEnrolled">0</h2>
-                    </div>
-                </div>
-            </section>
-
             <!-- Main Daily Grid -->
             <main class="main-content">
-                <!-- Left Side: Live Video Stream Feed -->
+                <!-- Left Column: Vertical Stat Cards Sidebar -->
+                <aside class="stats-grid stats-sidebar">
+                    <div class="stat-card card-total tilt-card">
+                        <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-title">Total Present Today</span>
+                            <h2 class="stat-number" id="statTotal">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card card-ontime tilt-card">
+                        <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-title">On Time</span>
+                            <h2 class="stat-number" id="statOnTime">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card card-late tilt-card">
+                        <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-title">Late Arrival</span>
+                            <h2 class="stat-number" id="statLate">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card card-od tilt-card">
+                        <div class="stat-icon"><i class="fa-solid fa-id-badge"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-title">OD (On Duty)</span>
+                            <h2 class="stat-number" id="statOD">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card card-absent tilt-card">
+                        <div class="stat-icon"><i class="fa-solid fa-user-xmark"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-title">Total Absent Today</span>
+                            <h2 class="stat-number" id="statAbsent">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card card-enrolled tilt-card">
+                        <div class="stat-icon"><i class="fa-solid fa-id-card"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-title">Enrolled Students</span>
+                            <h2 class="stat-number" id="statEnrolled">0</h2>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Center Column: Live Video Stream Feed -->
                 <div class="card video-card tilt-card">
                     <div class="card-header">
                         <div class="card-title">
