@@ -67,14 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let serverTimeOffsetMinutes = 0;
 
 
-    // 1. Live Digital Clock & Date
+    // 1. Live Digital Clock & Date (IST Timezone)
     function updateClock() {
         let now = new Date();
         if (serverTimeOffsetMinutes !== 0) {
             now = new Date(now.getTime() + serverTimeOffsetMinutes * 60 * 1000);
         }
-        const dateOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
-        const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+        const dateOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Kolkata' };
+        const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' };
         
         const dateStr = now.toLocaleDateString('en-US', dateOptions);
         const timeStr = now.toLocaleTimeString('en-US', timeOptions);
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const liveClockStrEl = document.getElementById('liveClockStr');
 
         if (liveDateStrEl) liveDateStrEl.textContent = dateStr;
-        if (liveClockStrEl) liveClockStrEl.textContent = timeStr;
+        if (liveClockStrEl) liveClockStrEl.textContent = timeStr + ' IST';
     }
     setInterval(updateClock, 1000);
     updateClock();
