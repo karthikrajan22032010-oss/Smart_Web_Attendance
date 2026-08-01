@@ -921,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (statAbsent) statAbsent.textContent = data.stats.absent || 0;
                 if (statEnrolled) statEnrolled.textContent = data.stats.enrolled || 0;
                 const statStrength = document.getElementById('statStrength');
-                if (statStrength) statStrength.textContent = data.stats.total_strength || data.stats.enrolled || (cachedRoster.length || 60);
+                if (statStrength) statStrength.textContent = data.stats.total_strength || data.stats.enrolled || cachedRegisteredStudents.length || cachedRoster.length || 0;
             }
             
             if (data.mongo_status) {
