@@ -109,12 +109,13 @@ body {
     background-attachment: fixed;
     color: var(--text-main);
     min-height: 100vh;
-    padding: 12px 20px 24px 20px;
+    padding: 10px 16px 24px 16px;
 }
 
 .app-container {
-    max-width: 1600px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -122,13 +123,14 @@ body {
 
 /* Header Component */
 .app-header {
+    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: var(--card-bg);
     backdrop-filter: blur(14px);
     border: 1px solid var(--card-border);
-    padding: 12px 22px;
+    padding: 12px 20px;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-main);
 }
