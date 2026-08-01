@@ -140,23 +140,23 @@ body {
     background: var(--card-bg);
     backdrop-filter: blur(14px);
     border: 1px solid var(--card-border);
-    padding: 12px 18px;
+    padding: 10px 16px;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-main);
     box-sizing: border-box;
-    flex-wrap: wrap;
-    gap: 12px;
+    gap: 14px;
 }
 
 .brand {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
+    flex-shrink: 0;
 }
 
 .brand-logo-container {
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
     background: linear-gradient(135deg, rgba(0, 255, 157, 0.22), rgba(56, 189, 248, 0.22));
     border: 1.5px solid var(--primary);
@@ -189,6 +189,8 @@ body {
     align-items: flex-end;
     justify-content: center;
     gap: 6px;
+    flex: 1;
+    width: 100%;
 }
 
 .header-action-row {
@@ -197,13 +199,16 @@ body {
     justify-content: flex-end;
     gap: 8px;
     flex-wrap: wrap;
+    width: 100%;
 }
 
 .schedule-badges {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 8px;
     flex-wrap: wrap;
+    width: 100%;
 }
 
 .badge-item {
