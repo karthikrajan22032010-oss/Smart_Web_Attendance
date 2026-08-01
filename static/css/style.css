@@ -109,7 +109,7 @@ body {
     background-attachment: fixed;
     color: var(--text-main);
     min-height: 100vh;
-    padding: 24px;
+    padding: 12px 20px 24px 20px;
 }
 
 .app-container {
@@ -117,7 +117,7 @@ body {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
 }
 
 /* Header Component */
@@ -128,7 +128,7 @@ body {
     background: var(--card-bg);
     backdrop-filter: blur(14px);
     border: 1px solid var(--card-border);
-    padding: 20px 32px;
+    padding: 12px 22px;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-main);
 }
