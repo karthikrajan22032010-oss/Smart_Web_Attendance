@@ -243,6 +243,25 @@
                             </div>
                         </div>
 
+                        <!-- Camera Action Buttons at Top of Output Screen -->
+                        <div class="video-footer video-top-controls">
+                            <span class="status-msg" id="camStatusMsg"><i class="fa-solid fa-video-slash text-danger"></i> Camera Standby (OFF)</span>
+                            <div class="cam-action-btns">
+                                <button class="btn btn-secondary-gray btn-sm" id="btnServerFeedActive" disabled>
+                                    <i class="fa-solid fa-server"></i> Server Feed Active
+                                </button>
+                                <button class="btn btn-white-active btn-sm" id="btnToggleCamera" title="Turn Camera ON or OFF">
+                                    <i class="fa-solid fa-power-off"></i> Turn Camera OFF
+                                </button>
+                                <button class="btn btn-outline-emerald btn-sm" id="btnToggleCamSource" title="Switch Camera Source">
+                                    <i class="fa-solid fa-mobile-screen"></i> Use Device Camera
+                                </button>
+                                <button class="btn btn-outline-dark btn-sm btnRefreshFeed" title="Reload Feed">
+                                    <i class="fa-solid fa-rotate-right"></i> Reload
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="video-container" id="videoContainer">
                             <img class="video-feed-img" id="serverVideoImg" src="" alt="Live Camera Feed Stream">
                             <video id="clientVideo" autoplay playsinline muted style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></video>
@@ -266,24 +285,6 @@
                                 <div class="corner corner-br"></div>
                                 <div class="hud-telemetry-badge hud-top-left"><i class="fa-solid fa-microchip"></i> 60 FPS AI SCAN</div>
                                 <div class="hud-telemetry-badge hud-bottom-right"><i class="fa-solid fa-expand"></i> 3D PARALLAX DEPTH</div>
-                            </div>
-                        </div>
-
-                        <div class="video-footer">
-                            <span class="status-msg" id="camStatusMsg"><i class="fa-solid fa-video-slash text-danger"></i> Camera Standby (OFF)</span>
-                            <div class="cam-action-btns">
-                                <button class="btn btn-secondary-gray btn-sm" id="btnServerFeedActive" disabled>
-                                    <i class="fa-solid fa-server"></i> Server Feed Active
-                                </button>
-                                <button class="btn btn-white-active btn-sm" id="btnToggleCamera" title="Turn Camera ON or OFF">
-                                    <i class="fa-solid fa-power-off"></i> Turn Camera OFF
-                                </button>
-                                <button class="btn btn-outline-emerald btn-sm" id="btnToggleCamSource" title="Switch Camera Source">
-                                    <i class="fa-solid fa-mobile-screen"></i> Use Device Camera
-                                </button>
-                                <button class="btn btn-outline-dark btn-sm btnRefreshFeed" title="Reload Feed">
-                                    <i class="fa-solid fa-rotate-right"></i> Reload
-                                </button>
                             </div>
                         </div>
                     </div>

@@ -501,12 +501,16 @@ body {
 .corner-bl { bottom: 16px; left: 16px; border-width: 0 0 3px 3px; }
 .corner-br { bottom: 16px; right: 16px; border-width: 0 3px 3px 0; }
 
-.video-footer {
+.video-footer,
+.video-top-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 13px;
     color: var(--text-muted);
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 /* Attendance Table Card */
