@@ -964,6 +964,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const badge = document.getElementById('registeredStudentsCountBadge');
         if (!container) return;
 
+        // Update Total Strength & Enrolled count
+        const statStrengthEl = document.getElementById('statStrength');
+        const countVal = cachedRegisteredStudents.length || cachedRoster.length || 0;
+        if (statStrengthEl) statStrengthEl.textContent = countVal;
+
         if (badge) {
             badge.textContent = `${cachedRegisteredStudents.length} Enrolled`;
         }
@@ -973,7 +978,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        container.innerHTML = cachedRegisteredStudents.map(studentName => {
+        // Sort students in Alphabetical Order (A to Z)
+        const sortedStudents = [...cachedRegisteredStudents].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+        container.innerHTML = sortedStudents.map(studentName => {
             const rosterItem = cachedRoster.find(r => (typeof r === 'object' && r.name ? r.name.toLowerCase() : String(r).toLowerCase()) === studentName.toLowerCase());
             const photoName = (rosterItem && typeof rosterItem === 'object') ? rosterItem.photo : null;
             const rollNo = (rosterItem && typeof rosterItem === 'object' && rosterItem.roll_no && rosterItem.roll_no !== '-') ? rosterItem.roll_no : '';
@@ -1847,6 +1855,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.card-od')?.addEventListener('click', () => openCategoryModal('od'));
     document.querySelector('.card-absent')?.addEventListener('click', () => openCategoryModal('absent'));
     document.querySelector('.card-enrolled')?.addEventListener('click', () => openCategoryModal('enrolled'));
+    document.querySelector('.card-strength')?.addEventListener('click', () => {
+        const openRosterModalBtn = document.getElementById('openRosterModalBtn');
+        if (openRosterModalBtn) {
+            openRosterModalBtn.click();
+            showToast('Showing Class Roster in Alphabetical Order (A-Z)', 'info');
+        } else {
+            openCategoryModal('enrolled');
+        }
+    });
 
     // Cookie Consent Banner System
     const cookieBanner = document.getElementById('cookieConsentBanner');
