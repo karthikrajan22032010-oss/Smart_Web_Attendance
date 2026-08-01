@@ -920,6 +920,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const statAbsent = document.getElementById('statAbsent');
                 if (statAbsent) statAbsent.textContent = data.stats.absent || 0;
                 if (statEnrolled) statEnrolled.textContent = data.stats.enrolled || 0;
+                const statStrength = document.getElementById('statStrength');
+                if (statStrength) statStrength.textContent = data.stats.total_strength || data.stats.enrolled || (cachedRoster.length || 60);
             }
             
             if (data.mongo_status) {
