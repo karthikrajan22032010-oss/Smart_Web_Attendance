@@ -422,7 +422,8 @@ body {
     border-radius: var(--radius-md);
     overflow: hidden;
     background: #000;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 10;
+    min-height: 350px;
     border: 1px solid var(--border-color);
 }
 
@@ -1831,27 +1832,28 @@ body {
 
 .camera-offline-msg {
     text-align: center;
-    padding: 20px;
+    padding: 24px;
 }
 
 .text-danger-large {
-    font-size: 42px;
+    font-size: 54px;
     color: #ef4444;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     display: block;
 }
 
 .cam-offline-title {
     color: #ffffff;
     font-weight: 700;
-    font-size: 16px;
-    margin-bottom: 4px;
+    font-size: 19px;
+    margin-bottom: 6px;
+    letter-spacing: 0.2px;
 }
 
 .cam-offline-sub {
     color: #00ff9d;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 /* Target Crosshair */
@@ -1860,11 +1862,11 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 48px;
-    height: 48px;
+    width: 68px;
+    height: 68px;
     border: 2px dashed #00ff9d;
     border-radius: 50%;
-    box-shadow: 0 0 14px rgba(0, 255, 157, 0.4);
+    box-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
     pointer-events: none;
 }
 
@@ -1874,11 +1876,11 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     background: #00ff9d;
     border-radius: 50%;
-    box-shadow: 0 0 8px #00ff9d;
+    box-shadow: 0 0 10px #00ff9d;
 }
 
 /* Table Empty State Clipboard Icon */
