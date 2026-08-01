@@ -1369,8 +1369,9 @@ def get_attendance():
     current_time_sec = time.time()
     file_mtime = os.path.getmtime(target_csv) if os.path.exists(target_csv) else 0
 
+    force_refresh = request.args.get('t') or request.args.get('refresh')
     cache_entry = _attendance_api_cache.get(code)
-    if cache_entry and (current_time_sec - cache_entry['time'] < 2.0) and cache_entry['mtime'] == file_mtime:
+    if not force_refresh and cache_entry and (current_time_sec - cache_entry['time'] < 2.0) and cache_entry['mtime'] == file_mtime:
         cached_payload = dict(cache_entry['payload'])
         cached_payload["current_time_info"] = {
             "date_str": now.strftime("%a, %b %d, %Y"),
@@ -1591,6 +1592,7 @@ def manual_entry():
         success, msg = mark_attendance(name, custom_time=formatted_time, custom_status=custom_status, remarks=remarks, custom_date=custom_date)
         results.append(msg)
 
+    _attendance_api_cache.clear()
     date_label = f" for date {custom_date}" if custom_date else ""
     return jsonify({"success": True, "message": f"Successfully processed {len(names)} student(s){date_label}!"})
 

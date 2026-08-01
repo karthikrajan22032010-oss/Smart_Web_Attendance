@@ -892,7 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Fetch Daily Attendance & Stats (Position 1)
     async function fetchAttendanceData() {
         try {
-            const response = await fetch('/api/attendance');
+            const response = await fetch(`/api/attendance?t=${Date.now()}`);
             if (!response.ok) return;
             
             const data = await response.json();
