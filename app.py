@@ -169,33 +169,83 @@ in_memory_rosters = {}
 in_memory_attendance = {}
 
 def load_class_roster():
-    """Loads student name list roster for active logged-in class account."""
+    """Loads student name list roster for active logged-in class account with multi-tier persistence."""
     code = get_class_code()
     if code in in_memory_rosters and in_memory_rosters[code]:
         return in_memory_rosters[code]
 
+    # 1. Primary Storage path
     rpath = get_class_roster_path()
-    if ALLOW_DISK_STORAGE and os.path.exists(rpath):
+    if os.path.exists(rpath):
         try:
             with open(rpath, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                in_memory_rosters[code] = data
-                return data
+                if data:
+                    in_memory_rosters[code] = data
+                    return data
         except Exception as e:
             print(f"[ERROR] Loading roster {rpath}: {e}")
+
+    # 2. Backup Root Workspace file
+    root_rpath = os.path.join(os.getcwd(), f"roster_{code}.json")
+    if os.path.exists(root_rpath):
+        try:
+            with open(root_rpath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if data:
+                    in_memory_rosters[code] = data
+                    return data
+        except Exception as err:
+            print(f"[ERROR] Loading root roster {root_rpath}: {err}")
+
+    # 3. MongoDB Persistence
+    if USE_MONGO and db is not None:
+        try:
+            doc = db.rosters.find_one({"academicYear": code}, {"_id": 0})
+            if doc and doc.get("roster"):
+                data = doc["roster"]
+                in_memory_rosters[code] = data
+                return data
+        except Exception as m_err:
+            print(f"[WARNING] MongoDB roster load error: {m_err}")
+
     return in_memory_rosters.get(code, [])
 
 def save_class_roster(roster_list):
-    """Saves student roster list to class-isolated JSON file if disk storage allowed."""
+    """Saves student roster list to class-isolated JSON files and MongoDB for permanent persistence."""
     code = get_class_code()
     in_memory_rosters[code] = roster_list
-    if ALLOW_DISK_STORAGE:
-        rpath = get_class_roster_path()
+
+    # 1. Save to primary storage directory
+    rpath = get_class_roster_path()
+    try:
+        os.makedirs(os.path.dirname(rpath), exist_ok=True)
+        with open(rpath, 'w', encoding='utf-8') as f:
+            json.dump(roster_list, f, indent=2)
+    except Exception as e:
+        print(f"[ERROR] Saving roster {rpath}: {e}")
+
+    # 2. Save to backup root workspace file
+    try:
+        root_rpath = os.path.join(os.getcwd(), f"roster_{code}.json")
+        with open(root_rpath, 'w', encoding='utf-8') as f:
+            json.dump(roster_list, f, indent=2)
+    except Exception as err:
+        print(f"[ERROR] Saving backup roster {root_rpath}: {err}")
+
+    # 3. Save to MongoDB cloud database
+    if USE_MONGO and db is not None:
         try:
-            with open(rpath, 'w', encoding='utf-8') as f:
-                json.dump(roster_list, f, indent=2)
-        except Exception as e:
-            print(f"[ERROR] Saving roster {rpath}: {e}")
+            db.rosters.update_one(
+                {"academicYear": code},
+                {"$set": {"academicYear": code, "roster": roster_list, "updated_at": get_current_now().strftime("%Y-%m-%d %H:%M:%S")}},
+                upsert=True
+            )
+        except Exception as mongo_err:
+            print(f"[WARNING] MongoDB roster save error: {mongo_err}")
+
+    if '_attendance_api_cache' in globals():
+        _attendance_api_cache.clear()
 
 def init_all_class_directories():
     """Pre-creates all class folders (ECE2, ECE3, CLASS1) in workspace root known_faces and attendance_data."""
