@@ -177,110 +177,113 @@
         <div class="tab-content active" id="posDaily">
             <!-- Main Daily Grid -->
             <main class="main-content">
-                <!-- Left Column: Vertical Stat Cards Sidebar -->
-                <aside class="stats-grid stats-sidebar">
-                    <div class="stat-card card-total tilt-card">
-                        <div class="stat-icon icon-green"><i class="fa-solid fa-users"></i></div>
-                        <div class="stat-details">
-                            <span class="stat-title">Total Present Today</span>
-                            <h2 class="stat-number" id="statTotal">0</h2>
+                <!-- Top Row: Stats Sidebar (Left) + Camera Scanner (Right) -->
+                <div class="daily-top-row">
+                    <!-- Left Column: Vertical Stat Cards Sidebar -->
+                    <aside class="stats-grid stats-sidebar">
+                        <div class="stat-card card-total tilt-card">
+                            <div class="stat-icon icon-green"><i class="fa-solid fa-users"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-title">Total Present Today</span>
+                                <h2 class="stat-number" id="statTotal">0</h2>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card card-ontime tilt-card">
-                        <div class="stat-icon icon-green-check"><i class="fa-solid fa-circle-check"></i></div>
-                        <div class="stat-details">
-                            <span class="stat-title">On Time</span>
-                            <h2 class="stat-number" id="statOnTime">0</h2>
+                        <div class="stat-card card-ontime tilt-card">
+                            <div class="stat-icon icon-green-check"><i class="fa-solid fa-circle-check"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-title">On Time</span>
+                                <h2 class="stat-number" id="statOnTime">0</h2>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card card-late tilt-card">
-                        <div class="stat-icon icon-red-warning"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                        <div class="stat-details">
-                            <span class="stat-title">Late Arrival</span>
-                            <h2 class="stat-number" id="statLate">0</h2>
+                        <div class="stat-card card-late tilt-card">
+                            <div class="stat-icon icon-red-warning"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-title">Late Arrival</span>
+                                <h2 class="stat-number" id="statLate">0</h2>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card card-od tilt-card">
-                        <div class="stat-icon icon-purple"><i class="fa-solid fa-id-badge"></i></div>
-                        <div class="stat-details">
-                            <span class="stat-title">OD (On Duty)</span>
-                            <h2 class="stat-number" id="statOD">0</h2>
+                        <div class="stat-card card-od tilt-card">
+                            <div class="stat-icon icon-purple"><i class="fa-solid fa-id-badge"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-title">OD (On Duty)</span>
+                                <h2 class="stat-number" id="statOD">0</h2>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card card-absent tilt-card">
-                        <div class="stat-icon icon-red-user"><i class="fa-solid fa-user-xmark"></i></div>
-                        <div class="stat-details">
-                            <span class="stat-title">Total Absent Today</span>
-                            <h2 class="stat-number" id="statAbsent">0</h2>
+                        <div class="stat-card card-absent tilt-card">
+                            <div class="stat-icon icon-red-user"><i class="fa-solid fa-user-xmark"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-title">Total Absent Today</span>
+                                <h2 class="stat-number" id="statAbsent">0</h2>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card card-enrolled tilt-card">
-                        <div class="stat-icon icon-yellow-id"><i class="fa-solid fa-id-card"></i></div>
-                        <div class="stat-details">
-                            <span class="stat-title">Enrolled Students</span>
-                            <h2 class="stat-number" id="statEnrolled">0</h2>
+                        <div class="stat-card card-enrolled tilt-card">
+                            <div class="stat-icon icon-yellow-id"><i class="fa-solid fa-id-card"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-title">Enrolled Students</span>
+                                <h2 class="stat-number" id="statEnrolled">0</h2>
+                            </div>
                         </div>
-                    </div>
-                </aside>
+                    </aside>
 
-                <!-- Center Column: Live Video Stream Feed -->
-                <div class="card video-card tilt-card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fa-solid fa-camera text-emerald"></i>
-                            <span>Real-Time Face Scanner</span>
-                        </div>
-                        <div class="live-indicator-pill">
-                            <span class="pulse-dot"></span> LIVE SCAN
-                        </div>
-                    </div>
-
-                    <div class="video-container" id="videoContainer">
-                        <img class="video-feed-img" id="serverVideoImg" src="" alt="Live Camera Feed Stream">
-                        <video id="clientVideo" autoplay playsinline muted style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></video>
-                        <canvas id="clientCanvas" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 4; border-radius: 12px;"></canvas>
-                        
-                        <div class="video-standby-screen" id="camStandbyScreen">
-                            <div class="camera-offline-msg font-center">
-                                <i class="fa-solid fa-video-slash text-danger-large"></i>
-                                <h4 class="cam-offline-title">Host PC Camera Unavailable</h4>
-                                <p class="cam-offline-sub">Using Browser/Device Camera Mode</p>
+                    <!-- Right Column: Live Video Stream Feed -->
+                    <div class="card video-card tilt-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fa-solid fa-camera text-emerald"></i>
+                                <span>Real-Time Face Scanner</span>
+                            </div>
+                            <div class="live-indicator-pill">
+                                <span class="pulse-dot"></span> LIVE SCAN
                             </div>
                         </div>
 
-                        <div class="video-overlay" id="videoOverlayHUD">
-                            <div class="scan-line"></div>
-                            <div class="laser-sweep-beam"></div>
-                            <div class="hud-center-crosshair"></div>
-                            <div class="corner corner-tl"></div>
-                            <div class="corner corner-tr"></div>
-                            <div class="corner corner-bl"></div>
-                            <div class="corner corner-br"></div>
-                            <div class="hud-telemetry-badge hud-top-left"><i class="fa-solid fa-microchip"></i> 60 FPS AI SCAN</div>
-                            <div class="hud-telemetry-badge hud-bottom-right"><i class="fa-solid fa-expand"></i> 3D PARALLAX DEPTH</div>
-                        </div>
-                    </div>
+                        <div class="video-container" id="videoContainer">
+                            <img class="video-feed-img" id="serverVideoImg" src="" alt="Live Camera Feed Stream">
+                            <video id="clientVideo" autoplay playsinline muted style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></video>
+                            <canvas id="clientCanvas" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 4; border-radius: 12px;"></canvas>
+                            
+                            <div class="video-standby-screen" id="camStandbyScreen">
+                                <div class="camera-offline-msg font-center">
+                                    <i class="fa-solid fa-video-slash text-danger-large"></i>
+                                    <h4 class="cam-offline-title">Host PC Camera Unavailable</h4>
+                                    <p class="cam-offline-sub">Using Browser/Device Camera Mode</p>
+                                </div>
+                            </div>
 
-                    <div class="video-footer">
-                        <span class="status-msg" id="camStatusMsg"><i class="fa-solid fa-video-slash text-danger"></i> Camera Standby (OFF)</span>
-                        <div class="cam-action-btns">
-                            <button class="btn btn-secondary-gray btn-sm" id="btnServerFeedActive" disabled>
-                                <i class="fa-solid fa-server"></i> Server Feed Active
-                            </button>
-                            <button class="btn btn-white-active btn-sm" id="btnToggleCamera" title="Turn Camera ON or OFF">
-                                <i class="fa-solid fa-power-off"></i> Turn Camera OFF
-                            </button>
-                            <button class="btn btn-outline-emerald btn-sm" id="btnToggleCamSource" title="Switch Camera Source">
-                                <i class="fa-solid fa-mobile-screen"></i> Use Device Camera
-                            </button>
-                            <button class="btn btn-outline-dark btn-sm btnRefreshFeed" title="Reload Feed">
-                                <i class="fa-solid fa-rotate-right"></i> Reload
-                            </button>
+                            <div class="video-overlay" id="videoOverlayHUD">
+                                <div class="scan-line"></div>
+                                <div class="laser-sweep-beam"></div>
+                                <div class="hud-center-crosshair"></div>
+                                <div class="corner corner-tl"></div>
+                                <div class="corner corner-tr"></div>
+                                <div class="corner corner-bl"></div>
+                                <div class="corner corner-br"></div>
+                                <div class="hud-telemetry-badge hud-top-left"><i class="fa-solid fa-microchip"></i> 60 FPS AI SCAN</div>
+                                <div class="hud-telemetry-badge hud-bottom-right"><i class="fa-solid fa-expand"></i> 3D PARALLAX DEPTH</div>
+                            </div>
+                        </div>
+
+                        <div class="video-footer">
+                            <span class="status-msg" id="camStatusMsg"><i class="fa-solid fa-video-slash text-danger"></i> Camera Standby (OFF)</span>
+                            <div class="cam-action-btns">
+                                <button class="btn btn-secondary-gray btn-sm" id="btnServerFeedActive" disabled>
+                                    <i class="fa-solid fa-server"></i> Server Feed Active
+                                </button>
+                                <button class="btn btn-white-active btn-sm" id="btnToggleCamera" title="Turn Camera ON or OFF">
+                                    <i class="fa-solid fa-power-off"></i> Turn Camera OFF
+                                </button>
+                                <button class="btn btn-outline-emerald btn-sm" id="btnToggleCamSource" title="Switch Camera Source">
+                                    <i class="fa-solid fa-mobile-screen"></i> Use Device Camera
+                                </button>
+                                <button class="btn btn-outline-dark btn-sm btnRefreshFeed" title="Reload Feed">
+                                    <i class="fa-solid fa-rotate-right"></i> Reload
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Side: Today's Live Attendance Table -->
+                <!-- Bottom Row: Today's Live Attendance Table -->
                 <div class="card table-card tilt-card">
                     <div class="card-header">
                         <div class="card-title">
