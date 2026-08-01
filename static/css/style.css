@@ -886,30 +886,32 @@ body {
 
 /* 3 Position Navigation Tabs Bar */
 .nav-positions {
-    display: flex;
-    gap: 14px;
+    display: inline-flex;
+    align-self: flex-start;
+    gap: 10px;
     background: var(--card-bg);
     backdrop-filter: blur(14px);
     border: 1px solid var(--card-border);
-    padding: 10px 12px;
+    padding: 6px 10px;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-main);
+    margin-bottom: 2px;
 }
 
 .nav-tab {
-    flex: 1;
+    flex: 0 0 auto;
     background: none;
     border: 1px solid transparent;
     color: var(--text-muted);
-    padding: 14px 24px;
+    padding: 10px 18px;
     border-radius: var(--radius-md);
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
     transition: var(--transition);
 }
 
