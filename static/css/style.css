@@ -453,9 +453,8 @@ body {
     border-radius: var(--radius-md);
     overflow: hidden;
     background: #000;
-    aspect-ratio: 16 / 9;
-    max-height: 210px;
-    min-height: 170px;
+    aspect-ratio: 16 / 10;
+    min-height: 320px;
     border: 1px solid var(--border-color);
 }
 
@@ -561,7 +560,7 @@ body {
 .table-responsive {
     overflow-x: auto;
     overflow-y: auto;
-    max-height: 280px;
+    max-height: 380px;
 }
 
 .attendance-table {
