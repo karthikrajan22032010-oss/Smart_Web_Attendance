@@ -1780,37 +1780,43 @@ body {
     background: #ffffff !important;
     color: #0f172a !important;
     border: 1px solid #cbd5e1 !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2) !important;
 }
 
 .btn-white-excel:hover {
     background: #f8fafc !important;
     border-color: #10b981 !important;
+    box-shadow: 0 4px 14px rgba(255, 255, 255, 0.3) !important;
 }
 
 .btn-pdf-export {
-    background: rgba(239, 68, 68, 0.12) !important;
+    background: rgba(239, 68, 68, 0.18) !important;
     color: #ef4444 !important;
-    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2) !important;
 }
 
 .btn-pdf-export:hover {
-    background: rgba(239, 68, 68, 0.22) !important;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3) !important;
+    background: rgba(239, 68, 68, 0.3) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.4) !important;
 }
 
 .btn-trash-clear {
-    background: rgba(239, 68, 68, 0.12) !important;
+    background: rgba(239, 68, 68, 0.18) !important;
     color: #ef4444 !important;
-    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2) !important;
 }
 
 .btn-trash-clear:hover {
-    background: rgba(239, 68, 68, 0.22) !important;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3) !important;
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.5) !important;
 }
 
-/* 6 Metric Card Stat Icon Colors */
+/* 6 Metric Card Stat Icon Colors & Red Card Highlights */
 .icon-green {
     background: rgba(0, 255, 157, 0.15) !important;
     color: #00ff9d !important;
@@ -1822,8 +1828,9 @@ body {
 }
 
 .icon-red-warning {
-    background: rgba(239, 68, 68, 0.15) !important;
+    background: rgba(239, 68, 68, 0.25) !important;
     color: #ef4444 !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3) !important;
 }
 
 .icon-purple {
@@ -1832,8 +1839,18 @@ body {
 }
 
 .icon-red-user {
-    background: rgba(239, 68, 68, 0.18) !important;
-    color: #f87171 !important;
+    background: rgba(239, 68, 68, 0.25) !important;
+    color: #ff4d4d !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4) !important;
+}
+
+.card-absent {
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+    background: rgba(239, 68, 68, 0.06) !important;
+}
+
+.card-late {
+    border: 1px solid rgba(245, 158, 11, 0.3) !important;
 }
 
 .icon-yellow-id {
