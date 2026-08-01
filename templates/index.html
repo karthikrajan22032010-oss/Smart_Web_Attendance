@@ -110,53 +110,50 @@
         <!-- Top Navigation / Header -->
         <header class="app-header">
             <div class="brand">
-                <div class="brand-logo-container">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="3D Logo" class="brand-logo-3d" id="headerLogoImg" onerror="this.style.display='none'; document.getElementById('headerLogoIcon').style.display='flex';">
-                    <div class="brand-logo-fallback" id="headerLogoIcon" style="display: none;">
-                        <i class="fa-solid fa-face-smile text-primary"></i>
-                    </div>
+                <div class="brand-logo-icon-wrapper">
+                    <i class="fa-solid fa-face-smile brand-logo-icon"></i>
                 </div>
                 <div class="brand-text">
-                    <h1>SmartAttendance<span>Portal</span></h1>
+                    <h1>SmartAttendancePortal</h1>
                     <p>Real-Time Face Match & Classroom Surveillance</p>
                 </div>
-                <div class="class-active-badge">
-                    <i class="fa-solid fa-graduation-cap"></i> <span id="activeClassName">ECE 2nd Year</span>
+                <div class="class-badge-green">
+                    <i class="fa-solid fa-graduation-cap"></i> ECE 2nd Year (LAPC)
                 </div>
             </div>
 
             <div class="header-right-group">
                 <div class="schedule-badges">
-                    <span class="badge-item" title="Morning Entrance Cutoff"><i class="fa-solid fa-right-to-bracket"></i> In: <strong>09:10 AM</strong></span>
-                    <span class="badge-item" title="Morning Break Window"><i class="fa-solid fa-mug-hot"></i> Morn: <strong>10:50 AM</strong></span>
-                    <span class="badge-item" title="Lunch Break Window"><i class="fa-solid fa-utensils"></i> Lunch: <strong>12:50 PM</strong></span>
-                    <span class="badge-item" title="Evening Break Window"><i class="fa-solid fa-cookie-bite"></i> Eve: <strong>03:50 PM</strong></span>
-                    <span class="badge-item" title="Shift Departure Time"><i class="fa-solid fa-right-from-bracket"></i> Out: <strong>05:10 PM</strong></span>
-                    <span class="badge-item db-badge"><i class="fa-solid fa-database text-success"></i> <strong id="mongoStatus">CSV Local</strong></span>
+                    <span class="badge-item badge-blue" title="Morning Entrance Cutoff"><i class="fa-solid fa-right-to-bracket"></i> In: <strong>09:10 AM</strong></span>
+                    <span class="badge-item badge-blue" title="Morning Break Window"><i class="fa-solid fa-mug-hot"></i> Morn: <strong>10:50 AM</strong></span>
+                    <span class="badge-item badge-blue" title="Lunch Break Window"><i class="fa-solid fa-utensils"></i> Lunch: <strong>12:50 PM</strong></span>
+                    <span class="badge-item badge-blue" title="Evening Break Window"><i class="fa-solid fa-cookie-bite"></i> Eve: <strong>03:50 PM</strong></span>
+                    <span class="badge-item badge-blue" title="Shift Departure Time"><i class="fa-solid fa-right-from-bracket"></i> Out: <strong>05:10 PM</strong></span>
+                    <span class="badge-item badge-csv-isolated" title="Isolated CSV Storage"><i class="fa-solid fa-file-csv"></i> CSV isolated</span>
                 </div>
                 <div class="header-action-row">
-                    <div class="theme-picker-group" style="display: flex; align-items: center; gap: 6px;">
+                    <div class="theme-picker-group">
                         <i class="fa-solid fa-palette text-warning" style="font-size: 14px;"></i>
-                        <select id="themeSelector" class="form-select-sm" style="background: rgba(15, 23, 42, 0.85); color: var(--text-main); border: 1px solid var(--card-border); padding: 5px 10px; border-radius: 20px; font-size: 12px; cursor: pointer; outline: none;" title="Change Dashboard Color Theme">
+                        <select id="themeSelector" class="form-select-sm theme-picker-select" title="Change Dashboard Color Theme">
+                            <option value="emerald" selected>🌲 Emerald Mint</option>
                             <option value="sapphire">🌌 Sapphire Blue</option>
                             <option value="gold">⚡ Cyber Neon Gold</option>
-                            <option value="emerald">🌲 Emerald Mint</option>
                             <option value="amethyst">🔮 Deep Amethyst</option>
                             <option value="titanium">💎 Titanium Cyan</option>
                         </select>
                     </div>
                     <div class="live-date-clock" id="liveDateClock" title="Click to adjust time">
-                        <span class="date-str" id="liveDateStr">Sun, Jul 26, 2026</span>
+                        <span class="date-str" id="liveDateStr">Sat, Aug 1, 2026</span>
                         <span class="clock-divider">•</span>
-                        <span class="clock-str" id="liveClockStr">12:14:00 AM</span>
+                        <span class="clock-str" id="liveClockStr">07:24:19 PM</span>
                     </div>
-                    <button class="btn btn-outline btn-xs btn-storage-mode" id="btnOpenStorageModal" title="Computer Storage Location Settings">
-                        <i class="fa-solid fa-hard-drive text-warning" id="headerStorageIcon"></i> <span id="headerStorageBadgeText">Computer Storage</span>
+                    <button class="btn btn-emerald-solid btn-xs btn-storage-mode" id="btnOpenStorageModal" title="Computer Storage Settings">
+                        <i class="fa-solid fa-globe"></i> <span id="headerStorageBadgeText">Website Only (No Files)</span>
                     </button>
-                    <button class="btn btn-outline btn-xs btn-sync-time" id="btnOpenSyncTimeModal" title="Sync or Adjust Clock Time">
+                    <button class="btn btn-emerald-solid btn-xs btn-sync-time" id="btnOpenSyncTimeModal" title="Sync or Adjust Clock Time">
                         <i class="fa-solid fa-clock-rotate-left"></i> Sync Time
                     </button>
-                    <button class="btn btn-outline btn-sm btn-logout" id="btnLogout" title="Logout Class Session">
+                    <button class="btn btn-outline-danger btn-sm btn-logout" id="btnLogout" title="Logout Class Session">
                         <i class="fa-solid fa-right-from-bracket"></i> Logout
                     </button>
                 </div>
@@ -183,42 +180,42 @@
                 <!-- Left Column: Vertical Stat Cards Sidebar -->
                 <aside class="stats-grid stats-sidebar">
                     <div class="stat-card card-total tilt-card">
-                        <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                        <div class="stat-icon icon-green"><i class="fa-solid fa-users"></i></div>
                         <div class="stat-details">
                             <span class="stat-title">Total Present Today</span>
                             <h2 class="stat-number" id="statTotal">0</h2>
                         </div>
                     </div>
                     <div class="stat-card card-ontime tilt-card">
-                        <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="stat-icon icon-green-check"><i class="fa-solid fa-circle-check"></i></div>
                         <div class="stat-details">
                             <span class="stat-title">On Time</span>
                             <h2 class="stat-number" id="statOnTime">0</h2>
                         </div>
                     </div>
                     <div class="stat-card card-late tilt-card">
-                        <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="stat-icon icon-red-warning"><i class="fa-solid fa-triangle-exclamation"></i></div>
                         <div class="stat-details">
                             <span class="stat-title">Late Arrival</span>
                             <h2 class="stat-number" id="statLate">0</h2>
                         </div>
                     </div>
                     <div class="stat-card card-od tilt-card">
-                        <div class="stat-icon"><i class="fa-solid fa-id-badge"></i></div>
+                        <div class="stat-icon icon-purple"><i class="fa-solid fa-id-badge"></i></div>
                         <div class="stat-details">
                             <span class="stat-title">OD (On Duty)</span>
                             <h2 class="stat-number" id="statOD">0</h2>
                         </div>
                     </div>
                     <div class="stat-card card-absent tilt-card">
-                        <div class="stat-icon"><i class="fa-solid fa-user-xmark"></i></div>
+                        <div class="stat-icon icon-red-user"><i class="fa-solid fa-user-xmark"></i></div>
                         <div class="stat-details">
                             <span class="stat-title">Total Absent Today</span>
                             <h2 class="stat-number" id="statAbsent">0</h2>
                         </div>
                     </div>
                     <div class="stat-card card-enrolled tilt-card">
-                        <div class="stat-icon"><i class="fa-solid fa-id-card"></i></div>
+                        <div class="stat-icon icon-yellow-id"><i class="fa-solid fa-id-card"></i></div>
                         <div class="stat-details">
                             <span class="stat-title">Enrolled Students</span>
                             <h2 class="stat-number" id="statEnrolled">0</h2>
@@ -230,10 +227,10 @@
                 <div class="card video-card tilt-card">
                     <div class="card-header">
                         <div class="card-title">
-                            <i class="fa-solid fa-camera"></i>
+                            <i class="fa-solid fa-camera text-emerald"></i>
                             <span>Real-Time Face Scanner</span>
                         </div>
-                        <div class="live-indicator">
+                        <div class="live-indicator-pill">
                             <span class="pulse-dot"></span> LIVE SCAN
                         </div>
                     </div>
@@ -242,38 +239,41 @@
                         <img class="video-feed-img" id="serverVideoImg" src="" alt="Live Camera Feed Stream">
                         <video id="clientVideo" autoplay playsinline muted style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></video>
                         <canvas id="clientCanvas" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 4; border-radius: 12px;"></canvas>
-                        <div class="video-standby-screen" id="camStandbyScreen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(15, 23, 42, 0.95); z-index: 5;">
-                            <i class="fa-solid fa-video-slash" style="font-size: 48px; color: var(--text-muted); margin-bottom: 12px;"></i>
-                            <h4 style="color: var(--text-main); font-weight: 600;">Camera Standby (OFF)</h4>
-                            <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Camera turns on automatically after login or click below.</p>
+                        
+                        <div class="video-standby-screen" id="camStandbyScreen">
+                            <div class="camera-offline-msg font-center">
+                                <i class="fa-solid fa-video-slash text-danger-large"></i>
+                                <h4 class="cam-offline-title">Host PC Camera Unavailable</h4>
+                                <p class="cam-offline-sub">Using Browser/Device Camera Mode</p>
+                            </div>
                         </div>
+
                         <div class="video-overlay" id="videoOverlayHUD">
                             <div class="scan-line"></div>
                             <div class="laser-sweep-beam"></div>
-                            <div class="hud-ring 3d-hud-compass"></div>
                             <div class="hud-center-crosshair"></div>
                             <div class="corner corner-tl"></div>
                             <div class="corner corner-tr"></div>
                             <div class="corner corner-bl"></div>
                             <div class="corner corner-br"></div>
-                            <div class="hud-telemetry-badge hud-top-left"><i class="fa-solid fa-microchip"></i> 60 FPS • AI SCAN</div>
+                            <div class="hud-telemetry-badge hud-top-left"><i class="fa-solid fa-microchip"></i> 60 FPS AI SCAN</div>
                             <div class="hud-telemetry-badge hud-bottom-right"><i class="fa-solid fa-expand"></i> 3D PARALLAX DEPTH</div>
                         </div>
                     </div>
 
                     <div class="video-footer">
                         <span class="status-msg" id="camStatusMsg"><i class="fa-solid fa-video-slash text-danger"></i> Camera Standby (OFF)</span>
-                        <div class="cam-action-btns" style="display: flex; gap: 8px;">
-                            <button class="btn btn-danger btn-sm" id="btnToggleCamera" title="Turn Camera ON or OFF">
+                        <div class="cam-action-btns">
+                            <button class="btn btn-secondary-gray btn-sm" id="btnServerFeedActive" disabled>
+                                <i class="fa-solid fa-server"></i> Server Feed Active
+                            </button>
+                            <button class="btn btn-white-active btn-sm" id="btnToggleCamera" title="Turn Camera ON or OFF">
                                 <i class="fa-solid fa-power-off"></i> Turn Camera OFF
                             </button>
-                            <button class="btn btn-outline btn-xs" id="btnToggleCamSource" title="Switch between Device Camera and Server Camera">
+                            <button class="btn btn-outline-emerald btn-sm" id="btnToggleCamSource" title="Switch Camera Source">
                                 <i class="fa-solid fa-mobile-screen"></i> Use Device Camera
                             </button>
-                            <button class="btn btn-outline btn-xs" id="btnFlipCam" style="display: none;" title="Flip Front / Back Camera">
-                                <i class="fa-solid fa-arrows-rotate"></i> Flip
-                            </button>
-                            <button class="btn btn-secondary btn-sm btnRefreshFeed">
+                            <button class="btn btn-outline-dark btn-sm btnRefreshFeed" title="Reload Feed">
                                 <i class="fa-solid fa-rotate-right"></i> Reload
                             </button>
                         </div>
@@ -284,14 +284,14 @@
                 <div class="card table-card tilt-card">
                     <div class="card-header">
                         <div class="card-title">
-                            <i class="fa-solid fa-clipboard-user"></i>
+                            <i class="fa-solid fa-clipboard-user text-emerald"></i>
                             <span>Today's Attendance Log</span>
                         </div>
                         <div class="header-actions">
-                            <button class="btn btn-primary btn-sm" id="openManualModalBtn">
+                            <button class="btn btn-emerald-solid btn-sm" id="openManualModalBtn">
                                 <i class="fa-solid fa-user-pen"></i> Teacher Manual & OD
                             </button>
-                            <button class="btn btn-outline btn-sm" id="openRosterModalBtn" title="Manage Class Roster, Face Registration & Enrolled Students">
+                            <button class="btn btn-emerald-solid btn-sm" id="openRosterModalBtn" title="Manage Class Roster, Face Registration & Enrolled Students">
                                 <i class="fa-solid fa-users-gear"></i> Class Roster & Face Registration
                             </button>
                         </div>
@@ -304,13 +304,13 @@
                             <input type="text" id="searchInput" placeholder="Search today's records...">
                         </div>
                         <div class="toolbar-btns">
-                            <button class="btn btn-success btn-sm btnExportExcel" title="Export Monthly Excel Report (.xlsx)">
-                                <i class="fa-solid fa-file-excel"></i> Monthly Excel
+                            <button class="btn btn-white-excel btn-sm btnExportExcel" title="Export Monthly Excel Report (.xlsx)">
+                                <i class="fa-solid fa-file-excel text-success"></i> Monthly Excel
                             </button>
-                            <button class="btn btn-icon btnExportCSV" title="Export CSV Data">
-                                <i class="fa-solid fa-file-csv"></i>
+                            <button class="btn btn-icon btn-pdf-export" id="btnExportPDF" title="Export PDF Report">
+                                <i class="fa-solid fa-file-pdf text-danger"></i>
                             </button>
-                            <button class="btn btn-icon text-danger" id="btnClearLog" title="Clear Today's Log">
+                            <button class="btn btn-icon btn-trash-clear text-danger" id="btnClearLog" title="Clear Today's Log">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>
@@ -338,8 +338,8 @@
                                 <tr class="empty-row">
                                     <td colspan="11">
                                         <div class="empty-state">
-                                            <i class="fa-solid fa-spinner fa-spin"></i>
-                                            <p>Scanning for faces...</p>
+                                            <i class="fa-solid fa-clipboard-list empty-clipboard-icon"></i>
+                                            <p class="empty-state-text">No attendance logged today yet.</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -468,7 +468,7 @@
 
         <!-- Developer Credit Footer -->
         <footer class="app-footer">
-            <p><i class="fa-solid fa-code text-primary"></i> Designed & Developed by <strong>MAYANDI KARTHIK RAJAN</strong></p>
+            <p class="footer-credit">&lt;/&gt; Designed &amp; Developed by <strong>MAYANDI KARTHIK RAJAN</strong></p>
         </footer>
     </div>
 

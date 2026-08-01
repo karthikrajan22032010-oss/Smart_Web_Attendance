@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Theme Selector Logic
     const themeSelector = document.getElementById('themeSelector');
-    const savedTheme = localStorage.getItem('portalTheme') || 'sapphire';
+    const savedTheme = localStorage.getItem('portalTheme') || 'emerald';
     document.documentElement.setAttribute('data-theme', savedTheme);
     if (themeSelector) {
         themeSelector.value = savedTheme;
