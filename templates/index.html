@@ -308,6 +308,15 @@
                 <div class="daily-top-row">
                     <!-- Left Column: Vertical Stat Cards Sidebar -->
                     <aside class="stats-grid stats-sidebar">
+                        <!-- 1. Total Strength -->
+                        <div class="stat-card card-strength tilt-card">
+                            <div class="stat-icon icon-cyan"><i class="fa-solid fa-graduation-cap"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-title">Total Strength</span>
+                                <h2 class="stat-number" id="statStrength">0</h2>
+                            </div>
+                        </div>
+                        <!-- 2. Total Present Today -->
                         <div class="stat-card card-total tilt-card">
                             <div class="stat-icon icon-green"><i class="fa-solid fa-users"></i></div>
                             <div class="stat-details">
@@ -315,27 +324,7 @@
                                 <h2 class="stat-number" id="statTotal">0</h2>
                             </div>
                         </div>
-                        <div class="stat-card card-ontime tilt-card">
-                            <div class="stat-icon icon-green-check"><i class="fa-solid fa-circle-check"></i></div>
-                            <div class="stat-details">
-                                <span class="stat-title">On Time</span>
-                                <h2 class="stat-number" id="statOnTime">0</h2>
-                            </div>
-                        </div>
-                        <div class="stat-card card-late tilt-card">
-                            <div class="stat-icon icon-red-warning"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                            <div class="stat-details">
-                                <span class="stat-title">Late Arrival</span>
-                                <h2 class="stat-number" id="statLate">0</h2>
-                            </div>
-                        </div>
-                        <div class="stat-card card-od tilt-card">
-                            <div class="stat-icon icon-purple"><i class="fa-solid fa-id-badge"></i></div>
-                            <div class="stat-details">
-                                <span class="stat-title">OD (On Duty)</span>
-                                <h2 class="stat-number" id="statOD">0</h2>
-                            </div>
-                        </div>
+                        <!-- 3. Total Absent Today (Directly below Total Present Today) -->
                         <div class="stat-card card-absent tilt-card">
                             <div class="stat-icon icon-red-user"><i class="fa-solid fa-user-xmark"></i></div>
                             <div class="stat-details">
@@ -343,18 +332,36 @@
                                 <h2 class="stat-number" id="statAbsent">0</h2>
                             </div>
                         </div>
+                        <!-- 4. OD (On Duty) (Directly below Absent) -->
+                        <div class="stat-card card-od tilt-card">
+                            <div class="stat-icon icon-purple"><i class="fa-solid fa-id-badge"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-title">OD (On Duty)</span>
+                                <h2 class="stat-number" id="statOD">0</h2>
+                            </div>
+                        </div>
+                        <!-- 5. On Time -->
+                        <div class="stat-card card-ontime tilt-card">
+                            <div class="stat-icon icon-green-check"><i class="fa-solid fa-circle-check"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-title">On Time</span>
+                                <h2 class="stat-number" id="statOnTime">0</h2>
+                            </div>
+                        </div>
+                        <!-- 6. Late Arrival -->
+                        <div class="stat-card card-late tilt-card">
+                            <div class="stat-icon icon-red-warning"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-title">Late Arrival</span>
+                                <h2 class="stat-number" id="statLate">0</h2>
+                            </div>
+                        </div>
+                        <!-- 7. Enrolled Students (Towards bottom) -->
                         <div class="stat-card card-enrolled tilt-card">
                             <div class="stat-icon icon-yellow-id"><i class="fa-solid fa-id-card"></i></div>
                             <div class="stat-details">
                                 <span class="stat-title">Enrolled Students</span>
                                 <h2 class="stat-number" id="statEnrolled">0</h2>
-                            </div>
-                        </div>
-                        <div class="stat-card card-strength tilt-card">
-                            <div class="stat-icon icon-cyan"><i class="fa-solid fa-graduation-cap"></i></div>
-                            <div class="stat-details">
-                                <span class="stat-title">Total Strength</span>
-                                <h2 class="stat-number" id="statStrength">0</h2>
                             </div>
                         </div>
                     </aside>
@@ -470,6 +477,74 @@
                                         <div class="empty-state">
                                             <i class="fa-solid fa-clipboard-list empty-clipboard-icon"></i>
                                             <p class="empty-state-text">No attendance logged today yet.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Two New Dedicated Display Boxes: Attended Students & Not Attended (Absent) Students -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; margin-bottom: 16px;">
+                    <!-- Dedicated Box 1: Attended Students Today -->
+                    <div class="card tilt-card" style="border-top: 4px solid var(--success);">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fa-solid fa-user-check text-success"></i>
+                                <span>Attended Students Today</span>
+                            </div>
+                            <span class="badge badge-success" id="attendedBoxCount">0 Present</span>
+                        </div>
+                        <div style="padding: 12px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;" id="attendedStudentsBoxContainer">
+                            <span class="text-muted small">No students attended yet today.</span>
+                        </div>
+                    </div>
+
+                    <!-- Dedicated Box 2: Not Attended (Absent) Students Today -->
+                    <div class="card tilt-card" style="border-top: 4px solid var(--danger);">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fa-solid fa-user-xmark text-danger"></i>
+                                <span>Not Attended (Absent) Students</span>
+                            </div>
+                            <span class="badge badge-danger" id="notAttendedBoxCount">0 Absent</span>
+                        </div>
+                        <div style="padding: 12px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;" id="notAttendedStudentsBoxContainer">
+                            <span class="text-muted small">All enrolled students are present!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dedicated Box 3: Complete Overall Attendance History at Bottom -->
+                <div class="card table-card tilt-card" style="margin-top: 16px;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-clock-rotate-left text-primary"></i>
+                            <span>Complete Overall Attendance History</span>
+                        </div>
+                        <span class="badge badge-info" id="overallHistoryBadge">Complete History Logs</span>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 350px;">
+                        <table class="attendance-table" id="overallHistoryTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Student Name</th>
+                                    <th>Date</th>
+                                    <th>Time In</th>
+                                    <th>Time Out</th>
+                                    <th>Status</th>
+                                    <th>Remarks / Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overallHistoryTableBody">
+                                <tr class="empty-row">
+                                    <td colspan="7">
+                                        <div class="empty-state">
+                                            <i class="fa-solid fa-clock-rotate-left empty-clipboard-icon"></i>
+                                            <p class="empty-state-text">No overall historical attendance records found.</p>
                                         </div>
                                     </td>
                                 </tr>

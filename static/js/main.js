@@ -1069,10 +1069,116 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             renderDailyTable();
+            renderAttendedAndAbsentBoxes();
+            renderOverallHistoryTable();
             renderRegisteredStudentsManageList();
         } catch (err) {
             console.error("Error fetching daily attendance:", err);
         }
+    }
+
+    function renderAttendedAndAbsentBoxes() {
+        const attendedContainer = document.getElementById('attendedStudentsBoxContainer');
+        const notAttendedContainer = document.getElementById('notAttendedStudentsBoxContainer');
+        const attendedCountEl = document.getElementById('attendedBoxCount');
+        const notAttendedCountEl = document.getElementById('notAttendedBoxCount');
+
+        if (!attendedContainer || !notAttendedContainer) return;
+
+        const presentNamesSet = new Set(cachedAttendance.map(item => (item.Name || '').toLowerCase().trim()));
+
+        // Attended Students UI
+        if (cachedAttendance.length === 0) {
+            attendedContainer.innerHTML = `<span class="text-muted small">No students logged attendance today yet.</span>`;
+            if (attendedCountEl) attendedCountEl.textContent = `0 Present`;
+        } else {
+            if (attendedCountEl) attendedCountEl.textContent = `${cachedAttendance.length} Present`;
+            attendedContainer.innerHTML = cachedAttendance.map((item, idx) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(5, 150, 105, 0.08); border: 1px solid rgba(5, 150, 105, 0.25); border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: 700; font-size: 12px; color: var(--success);">${idx + 1}.</span>
+                        <strong style="color: var(--text-main); font-size: 13px;">${escapeHtml(item.Name)}</strong>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge badge-ontime" style="font-size: 10px;"><i class="fa-solid fa-clock"></i> ${escapeHtml(item.In_Time || item.Time || '-')}</span>
+                        <span class="badge badge-ontime" style="font-size: 10px;">${escapeHtml(item.Status || 'Present')}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Not Attended (Absent) Students UI
+        const absentStudents = cachedRoster.filter(rItem => {
+            const rName = typeof rItem === 'object' ? rItem.name : rItem;
+            return rName && !presentNamesSet.has(rName.toLowerCase().trim());
+        });
+
+        if (notAttendedCountEl) notAttendedCountEl.textContent = `${absentStudents.length} Absent`;
+
+        if (absentStudents.length === 0) {
+            notAttendedContainer.innerHTML = `<span class="text-muted small">🎉 All enrolled students are present today!</span>`;
+        } else {
+            notAttendedContainer.innerHTML = absentStudents.map((rItem, idx) => {
+                const sName = typeof rItem === 'object' ? rItem.name : rItem;
+                const rNo = (typeof rItem === 'object' && rItem.roll_no && rItem.roll_no !== '-') ? rItem.roll_no : '-';
+                const mNo = (typeof rItem === 'object' && rItem.mobile_no && rItem.mobile_no !== '-') ? rItem.mobile_no : '-';
+
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.25); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 700; font-size: 12px; color: var(--danger);">${idx + 1}.</span>
+                                <strong style="color: var(--text-main); font-size: 13px;">${escapeHtml(sName)}</strong>
+                            </div>
+                            <small class="text-muted" style="font-size: 11px;">Roll No: ${escapeHtml(rNo)} | Mobile: ${escapeHtml(mNo)}</small>
+                        </div>
+                        <span class="badge badge-late" style="font-size: 10px;"><i class="fa-solid fa-user-xmark"></i> Absent</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    function renderOverallHistoryTable() {
+        const historyBody = document.getElementById('overallHistoryTableBody');
+        const historyCount = document.getElementById('overallHistoryBadge');
+        if (!historyBody) return;
+
+        if (cachedAttendance.length === 0) {
+            historyBody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="fa-solid fa-clock-rotate-left empty-clipboard-icon"></i>
+                            <p class="empty-state-text">No overall historical attendance records found.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            if (historyCount) historyCount.textContent = '0 Records Logged';
+            return;
+        }
+
+        if (historyCount) historyCount.textContent = `${cachedAttendance.length} Total Logged Records`;
+
+        historyBody.innerHTML = cachedAttendance.map((item, index) => {
+            const st = (item.Status || '').toUpperCase();
+            let badgeClass = 'badge-ontime';
+            if (st.includes('OD')) badgeClass = 'badge-od';
+            else if (st.includes('LATE')) badgeClass = 'badge-late';
+
+            return `
+                <tr>
+                    <td><strong>${index + 1}</strong></td>
+                    <td><i class="fa-solid fa-circle-user text-muted" style="margin-right: 6px;"></i> ${escapeHtml(item.Name)}</td>
+                    <td>${escapeHtml(item.Date)}</td>
+                    <td><span class="text-success" style="font-weight: 500;">${escapeHtml(item.In_Time || item.Time || '-')}</span></td>
+                    <td><span class="text-info" style="font-weight: 500;">${escapeHtml(item.Out_Time || '-')}</span></td>
+                    <td><span class="badge ${badgeClass}">${escapeHtml(item.Status)}</span></td>
+                    <td><small class="text-info">${escapeHtml(item.Remarks || '-')}</small></td>
+                </tr>
+            `;
+        }).join('');
     }
 
 
