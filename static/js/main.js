@@ -1838,12 +1838,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const badgeText = document.getElementById('autoCallsBadgeText');
         const icon = document.getElementById('autoCallsIcon');
         const statusBadge = document.getElementById('autoCallsStatusBadge');
+        const slider = document.getElementById('autoCallsSwitchSlider');
+        const knob = document.getElementById('autoCallsSwitchKnob');
+        const switchText = document.getElementById('autoCallsSwitchText');
 
         if (badgeText) badgeText.textContent = isEnabled ? 'Auto-Calls: ON (9:30 AM)' : 'Auto-Calls: OFF';
         if (icon) icon.className = isEnabled ? 'fa-solid fa-phone-volume text-success' : 'fa-solid fa-phone-slash text-danger';
         if (statusBadge) {
             statusBadge.className = isEnabled ? 'badge badge-success' : 'badge badge-danger';
             statusBadge.textContent = isEnabled ? 'Master Switch: ON' : 'Master Switch: OFF';
+        }
+        if (slider) slider.style.background = isEnabled ? '#10b981' : '#ef4444';
+        if (knob) knob.style.transform = isEnabled ? 'translateX(24px)' : 'translateX(0px)';
+        if (switchText) {
+            switchText.textContent = isEnabled ? 'ON' : 'OFF';
+            switchText.style.color = isEnabled ? '#10b981' : '#ef4444';
         }
     }
 

@@ -81,7 +81,7 @@
                         <label for="loginId"><i class="fa-solid fa-user-shield text-primary"></i> Class Login ID</label>
                         <div class="input-icon-wrapper">
                             <i class="fa-solid fa-id-badge input-icon"></i>
-                            <input type="text" id="loginId" placeholder="e.g. ECE2YEAR@LAPC" required autocomplete="username">
+                            <input type="text" id="loginId" placeholder="Enter Class Login ID" required autocomplete="username">
                         </div>
                     </div>
 
@@ -273,25 +273,31 @@
         <!-- POSITION 1: DAILY ATTENDANCE & LIVE SCANNER -->
         <div class="tab-content active" id="posDaily">
             <!-- Automated Bilingual (Tamil & English) Voice Call Notifications Control Card -->
-            <div class="auto-calls-banner-card" style="background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="font-size: 24px; color: var(--success);" id="autoCallsHeaderIcon"><i class="fa-solid fa-phone-volume"></i></div>
+            <div class="auto-calls-banner-card" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px 20px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="font-size: 26px; color: var(--success);" id="autoCallsHeaderIcon"><i class="fa-solid fa-phone-volume"></i></div>
                     <div>
-                        <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
                             <span>Automated Absence Voice Calls (Tamil & English)</span>
-                            <span class="badge badge-success" id="autoCallsStatusBadge">Master Switch: ON</span>
+                            <span class="badge badge-success" id="autoCallsStatusBadge" style="font-size: 11px;">Master Switch: ON</span>
                         </h4>
-                        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">
+                        <p style="margin: 3px 0 0 0; font-size: 12px; color: var(--text-muted);">
                             Auto-dials absent student parents after <strong>09:30 AM</strong> delivering voice messages in <strong>Tamil (தமிழ்)</strong> & <strong>English</strong>.
                         </p>
                     </div>
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <button type="button" class="btn btn-outline btn-xs" id="btnToggleAutoCallsMaster" style="border-color: var(--success); color: var(--success); font-weight: 700;">
-                        <i class="fa-solid fa-power-off"></i> Toggle Master Switch
-                    </button>
-                    <button type="button" class="btn btn-success btn-xs" id="btnTriggerAbsenceCallsNow" style="font-weight: 700; padding: 6px 14px;">
-                        <i class="fa-solid fa-phone-arrow-up-right"></i> Trigger Automated Calls Now (Tamil & English)
+                <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+                    <!-- Sleek Interactive ON / OFF Switch Slider -->
+                    <div id="btnToggleAutoCallsMaster" style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 30px; transition: all 0.25s ease;" title="Click to Press ON / OFF Master Switch">
+                        <span style="font-weight: 700; font-size: 13px; color: var(--text-main);">Master Switch:</span>
+                        <div class="switch-slider-pill" id="autoCallsSwitchSlider" style="width: 50px; height: 26px; background: #10b981; border-radius: 13px; position: relative; transition: background 0.3s ease; padding: 3px; display: flex; align-items: center;">
+                            <div class="switch-slider-knob" id="autoCallsSwitchKnob" style="width: 20px; height: 20px; background: #ffffff; border-radius: 50%; transition: transform 0.3s ease; transform: translateX(24px); box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>
+                        </div>
+                        <span style="font-weight: 800; font-size: 13px; color: #10b981; min-width: 32px;" id="autoCallsSwitchText">ON</span>
+                    </div>
+
+                    <button type="button" class="btn btn-emerald-solid btn-xs" id="btnTriggerAbsenceCallsNow" style="font-weight: 700; padding: 8px 16px; border-radius: 20px;">
+                        <i class="fa-solid fa-phone-arrow-up-right"></i> Trigger Calls Now
                     </button>
                 </div>
             </div>
