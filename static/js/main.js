@@ -724,11 +724,86 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    async function fetchAndRenderAccountsList() {
+        const container = document.getElementById('registeredAccountsList');
+        const badge = document.getElementById('regAccountCountBadge');
+        if (!container) return;
+
+        try {
+            const res = await fetch('/api/list_accounts');
+            if (!res.ok) return;
+            const data = await res.json();
+            const accounts = data.accounts || [];
+
+            if (badge) badge.textContent = `${accounts.length} Accounts`;
+
+            if (accounts.length === 0) {
+                container.innerHTML = `<span class="text-muted small">No registered class accounts found.</span>`;
+                return;
+            }
+
+            container.innerHTML = accounts.map(acc => {
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); border-radius: 6px;">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 700; color: var(--text-main); font-size: 13px;">
+                                <i class="fa-solid fa-graduation-cap text-success"></i> ${escapeHtml(acc.login_id)}
+                            </span>
+                            <span style="font-size: 11px; color: var(--text-muted);">
+                                ${escapeHtml(acc.class_name)} (Code: ${escapeHtml(acc.code)})
+                            </span>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-xs btnDeleteAccount" data-id="${escapeHtml(acc.login_id)}" style="padding: 4px 8px; font-size: 11px;">
+                            <i class="fa-solid fa-trash-can"></i> Remove Account
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            // Attach Delete Account Event Handlers
+            container.querySelectorAll('.btnDeleteAccount').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const idToDelete = e.currentTarget.getAttribute('data-id');
+                    if (!idToDelete) return;
+
+                    if (!confirm(`Are you sure you want to PERMANENTLY REMOVE class account '${idToDelete}'?`)) {
+                        return;
+                    }
+
+                    try {
+                        const delRes = await fetch('/api/delete_account', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ login_id: idToDelete })
+                        });
+                        const delData = await delRes.json();
+                        if (delRes.ok && delData.success) {
+                            showToast(delData.message, 'success');
+                            fetchAndRenderAccountsList();
+                            if (delData.was_current_session) {
+                                showToast('Current class session account was removed. Logging out...', 'warning');
+                                setTimeout(() => window.location.reload(), 1200);
+                            }
+                        } else {
+                            showToast(delData.message || 'Failed to remove account', 'danger');
+                        }
+                    } catch (err) {
+                        showToast('Error connecting to server to remove account', 'danger');
+                    }
+                });
+            });
+
+        } catch (err) {
+            console.error("Error fetching class accounts:", err);
+        }
+    }
+
     function toggleRegModal(show) {
         if (regModal) {
             if (show) {
                 regModal.classList.add('active');
                 resetRecaptchaState();
+                fetchAndRenderAccountsList();
             } else {
                 regModal.classList.remove('active');
                 resetRecaptchaState();
@@ -785,6 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(data.message || 'Account created successfully!', 'success');
                     if (loginIdInput) loginIdInput.value = regId;
                     if (loginPassInput) loginPassInput.value = regPass;
+                    fetchAndRenderAccountsList();
                     toggleRegModal(false);
                 } else {
                     if (regError) {

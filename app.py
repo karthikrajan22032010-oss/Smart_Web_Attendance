@@ -117,8 +117,8 @@ def get_current_now():
         return base_now + datetime.timedelta(minutes=TIME_OFFSET_MINUTES)
     return base_now
 
-# Class Account Credentials
-CLASS_ACCOUNTS = {
+# Class Account Credentials & Persistent Storage
+DEFAULT_CLASS_ACCOUNTS = {
     "ECE 2YEAR@LAPC": {
         "password": "123456789",
         "class_name": "ECE 2nd Year (LAPC)",
@@ -130,6 +130,43 @@ CLASS_ACCOUNTS = {
         "code": "ECE3"
     }
 }
+
+CLASS_ACCOUNTS = dict(DEFAULT_CLASS_ACCOUNTS)
+
+def get_accounts_file_path():
+    custom_path = os.path.join(CUSTOM_STORAGE_DIR, "registered_accounts.json")
+    root_path = os.path.join(os.getcwd(), "registered_accounts.json")
+    if ALLOW_DISK_STORAGE:
+        try:
+            os.makedirs(os.path.dirname(custom_path), exist_ok=True)
+            return custom_path
+        except Exception:
+            pass
+    return root_path
+
+def load_registered_accounts():
+    global CLASS_ACCOUNTS
+    fpath = get_accounts_file_path()
+    if os.path.exists(fpath):
+        try:
+            with open(fpath, 'r', encoding='utf-8') as f:
+                saved = json.load(f)
+                if isinstance(saved, dict):
+                    CLASS_ACCOUNTS = saved
+        except Exception as err:
+            print(f"[WARNING] Error loading registered accounts: {err}")
+    return CLASS_ACCOUNTS
+
+def save_registered_accounts():
+    fpath = get_accounts_file_path()
+    try:
+        with open(fpath, 'w', encoding='utf-8') as f:
+            json.dump(CLASS_ACCOUNTS, f, indent=2)
+        print(f"[INFO] Saved registered accounts to {fpath}")
+    except Exception as err:
+        print(f"[WARNING] Error saving registered accounts: {err}")
+
+load_registered_accounts()
 
 def get_class_code():
     """Returns class code for current active session ('ECE2', 'ECE3', or default 'ECE2')."""
@@ -1281,6 +1318,60 @@ def set_system_time():
     return jsonify({"success": False, "message": "No valid time provided"}), 400
 
 
+@app.route('/api/list_accounts', methods=['GET'])
+def list_accounts():
+    """API to list all active registered class accounts."""
+    load_registered_accounts()
+    accounts_list = []
+    for login_id, info in CLASS_ACCOUNTS.items():
+        accounts_list.append({
+            "login_id": login_id,
+            "class_name": info.get("class_name", login_id),
+            "code": info.get("code", "CLASS"),
+            "is_default": login_id in DEFAULT_CLASS_ACCOUNTS
+        })
+    return jsonify({"success": True, "accounts": accounts_list})
+
+
+@app.route('/api/delete_account', methods=['POST'])
+def delete_account():
+    """API to permanently delete/remove a registered class account."""
+    data = request.get_json() or {}
+    target_id = str(data.get('login_id', '')).strip()
+
+    if not target_id:
+        return jsonify({"success": False, "message": "❌ Please specify account Login ID to delete!"}), 400
+
+    load_registered_accounts()
+
+    matched_key = None
+    clean_target = target_id.replace(' ', '').upper()
+    for acc_id in list(CLASS_ACCOUNTS.keys()):
+        if acc_id.replace(' ', '').upper() == clean_target or acc_id.strip().lower() == target_id.strip().lower():
+            matched_key = acc_id
+            break
+
+    if not matched_key:
+        return jsonify({"success": False, "message": f"❌ Account '{target_id}' not found!"}), 404
+
+    # Remove from dictionary and save
+    account_info = CLASS_ACCOUNTS.pop(matched_key, None)
+    save_registered_accounts()
+
+    # If current logged in session belongs to deleted account, log out session
+    active_user = session.get('user_id', '')
+    is_current = active_user.replace(' ', '').upper() == clean_target or active_user.strip().lower() == target_id.strip().lower()
+    if is_current:
+        session.clear()
+
+    log_activity(f"Permanently Deleted Class Account: '{matched_key}'", "warning")
+    return jsonify({
+        "success": True, 
+        "message": f"🗑️ Successfully removed class account '{matched_key}'!",
+        "was_current_session": is_current
+    })
+
+
 @app.route('/api/register_account', methods=['POST'])
 def register_account():
     """API to dynamically register a new class or user account with reCAPTCHA verification."""
@@ -1302,6 +1393,7 @@ def register_account():
         "class_name": class_name,
         "code": clean_code
     }
+    save_registered_accounts()
 
     log_activity(f"New Class Account Registered: '{login_id}' ({class_name}) [reCAPTCHA Verified]", "success")
     return jsonify({
