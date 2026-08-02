@@ -61,7 +61,9 @@ def accept_cookies():
     """API to set user cookie acceptance preference."""
     resp = jsonify({"success": True, "message": "Cookie preferences accepted securely."})
     resp.set_cookie('cookie_consent', 'accepted', max_age=365*24*3600, httponly=False, samesite='Lax')
-    return resp
+# Computer Internal Storage vs Website Only Configurations
+ALLOW_DISK_STORAGE = True
+STORAGE_MODE = "internal_disk"
 CUSTOM_STORAGE_DIR = os.getenv("CUSTOM_STORAGE_DIR", "attendance_data")
 
 def get_storage_subfolder(subname):
@@ -211,9 +213,6 @@ def ensure_csv_file(fpath):
 
 
 
-# Computer Internal Storage vs Website Only Configurations
-ALLOW_DISK_STORAGE = True
-STORAGE_MODE = "internal_disk"
 in_memory_rosters = {}
 in_memory_attendance = {}
 
