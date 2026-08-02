@@ -1749,6 +1749,7 @@ def register_face():
     try:
         name = request.form.get('name', '').strip()
         roll_no = request.form.get('roll_no', '').strip() or "-"
+        mobile_no = request.form.get('mobile_no', '').strip() or "-"
 
         if not name:
             return jsonify({"success": False, "message": "Student name is required!"}), 400
@@ -1836,6 +1837,8 @@ def register_face():
                     item['photo_b64'] = photo_b64
                 if roll_no and roll_no != "-":
                     item['roll_no'] = roll_no
+                if mobile_no and mobile_no != "-":
+                    item['mobile_no'] = mobile_no
                 found = True
                 break
 
@@ -1843,6 +1846,7 @@ def register_face():
             roster.append({
                 "name": name,
                 "roll_no": roll_no,
+                "mobile_no": mobile_no,
                 "photo": filename_safe if filename_safe else None,
                 "photo_b64": photo_b64 if photo_b64 else None,
                 "added_at": get_current_now().strftime("%Y-%m-%d %I:%M %p")

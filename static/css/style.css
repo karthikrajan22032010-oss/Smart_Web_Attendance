@@ -1075,21 +1075,25 @@ body {
 
 
 .login-container {
-    min-height: 90vh;
+    min-height: 100vh;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     z-index: 10;
     padding: 20px;
+    background: linear-gradient(135deg, rgba(5, 20, 18, 0.82), rgba(7, 11, 25, 0.88)), 
+                url('../images/login_bg.png') no-repeat center center / cover;
+    box-sizing: border-box;
 }
 
 .login-card-3d {
-    background: rgba(15, 23, 42, 0.75);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.2);
+    background: rgba(13, 33, 29, 0.82);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7), 0 0 45px rgba(52, 211, 153, 0.25);
     border-radius: 24px;
     padding: 40px;
     width: 100%;

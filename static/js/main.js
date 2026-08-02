@@ -1588,6 +1588,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = roster.map(item => {
                 const sName = typeof item === 'object' ? item.name : item;
                 const rNo = (typeof item === 'object' && item.roll_no && item.roll_no !== '-') ? item.roll_no : '-';
+                const mNo = (typeof item === 'object' && item.mobile_no && item.mobile_no !== '-') ? item.mobile_no : '-';
                 const hasPhoto = typeof item === 'object' && item.photo;
                 const photoBadge = hasPhoto 
                     ? `<span class="badge badge-ontime" style="font-size: 11px;"><i class="fa-solid fa-camera text-success"></i> Photo Saved</span>`
@@ -1599,8 +1600,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="font-weight: 700; color: var(--text-main); font-size: 14px; display: flex; align-items: center; gap: 6px;">
                                 <i class="fa-solid fa-user text-primary"></i> ${escapeHtml(sName)}
                             </div>
-                            <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
+                            <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                                 <span><i class="fa-solid fa-id-card"></i> Roll No: <strong>${escapeHtml(rNo)}</strong></span>
+                                <span><i class="fa-solid fa-phone text-success"></i> Mobile: <strong>${escapeHtml(mNo)}</strong></span>
                                 ${photoBadge}
                             </div>
                         </div>
@@ -1776,6 +1778,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const name = document.getElementById('registerName').value.trim();
             const rollNo = document.getElementById('registerRollNo') ? document.getElementById('registerRollNo').value.trim() : '';
+            const mobileNo = document.getElementById('registerMobileNo') ? document.getElementById('registerMobileNo').value.trim() : '';
             const fileInput = document.getElementById('faceImage');
 
             if (!name) {
@@ -1786,6 +1789,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData();
             formData.append('name', name);
             formData.append('roll_no', rollNo);
+            formData.append('mobile_no', mobileNo);
             if (fileInput && fileInput.files.length > 0) {
                 formData.append('file', fileInput.files[0]);
             }
