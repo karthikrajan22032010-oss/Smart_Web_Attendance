@@ -194,7 +194,8 @@
         <header class="app-header">
             <div class="brand">
                 <div class="brand-logo-container" title="SmartAttendancePortal AI System">
-                    <div class="brand-logo-fallback">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Smart Attendance Portal Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="brand-logo-fallback" style="display: none;">
                         <i class="fa-solid fa-face-viewfinder text-primary" style="font-size: 28px;"></i>
                     </div>
                 </div>
@@ -273,23 +274,23 @@
         <!-- POSITION 1: DAILY ATTENDANCE & LIVE SCANNER -->
         <div class="tab-content active" id="posDaily">
             <!-- Automated Bilingual (Tamil & English) Voice Call Notifications Control Card -->
-            <div class="auto-calls-banner-card" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 14px; padding: 14px 20px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div class="auto-calls-banner-card" style="background: #ffffff; border: 1.5px solid rgba(226, 232, 240, 0.9); box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05); border-radius: 14px; padding: 14px 20px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 14px;">
-                    <div style="font-size: 26px; color: var(--success);" id="autoCallsHeaderIcon"><i class="fa-solid fa-phone-volume"></i></div>
+                    <div style="font-size: 26px; color: #059669;" id="autoCallsHeaderIcon"><i class="fa-solid fa-phone-volume"></i></div>
                     <div>
-                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 10px;">
                             <span>Automated Absence Voice Calls (Tamil & English)</span>
                             <span class="badge badge-success" id="autoCallsStatusBadge" style="font-size: 11px;">Master Switch: ON</span>
                         </h4>
-                        <p style="margin: 3px 0 0 0; font-size: 12px; color: var(--text-muted);">
-                            Auto-dials absent student parents after <strong>09:30 AM</strong> delivering voice messages in <strong>Tamil (தமிழ்)</strong> & <strong>English</strong>.
+                        <p style="margin: 3px 0 0 0; font-size: 12px; color: #475569;">
+                            Auto-dials absent student parents after <strong style="color: #0f172a;">09:30 AM</strong> delivering voice messages in <strong style="color: #0f172a;">Tamil (தமிழ்)</strong> & <strong style="color: #0f172a;">English</strong>.
                         </p>
                     </div>
                 </div>
                 <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
                     <!-- Sleek Interactive ON / OFF Switch Slider -->
-                    <div id="btnToggleAutoCallsMaster" style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 30px; transition: all 0.25s ease;" title="Click to Press ON / OFF Master Switch">
-                        <span style="font-weight: 700; font-size: 13px; color: var(--text-main);">Master Switch:</span>
+                    <div id="btnToggleAutoCallsMaster" style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; background: #f8fafc; border: 1px solid rgba(226, 232, 240, 0.9); padding: 6px 14px; border-radius: 30px; transition: all 0.25s ease;" title="Click to Press ON / OFF Master Switch">
+                        <span style="font-weight: 700; font-size: 13px; color: #0f172a;">Master Switch:</span>
                         <div class="switch-slider-pill" id="autoCallsSwitchSlider" style="width: 50px; height: 26px; background: #10b981; border-radius: 13px; position: relative; transition: background 0.3s ease; padding: 3px; display: flex; align-items: center;">
                             <div class="switch-slider-knob" id="autoCallsSwitchKnob" style="width: 20px; height: 20px; background: #ffffff; border-radius: 50%; transition: transform 0.3s ease; transform: translateX(24px); box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>
                         </div>
