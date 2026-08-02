@@ -103,16 +103,21 @@ def get_class_roster_path():
     roster_dir = get_storage_subfolder("class_rosters")
     return os.path.join(roster_dir, f"roster_{code}.json")
 
-# Computer Internal Storage vs Website Only Configurations
-ALLOW_DISK_STORAGE = True
-STORAGE_MODE = "internal_disk"
+# Configurable Attendance Thresholds & IST Timezone Configuration (Asia/Kolkata UTC+5:30)
+IST_TZ = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+
+CUTOFF_ON_TIME = "09:10:00"     # Scans up to 09:10:00 AM -> On Time
+CUTOFF_LATE = "09:30:00"        # Scans between 09:10:01 AM and 09:30:00 AM -> Late Arrival
+CUTOFF_ABSENT = "09:30:00"      # Anyone who hasn't scanned by 09:30 AM -> Absent
+# Any face scan performed after 09:30:00 AM updates status to -> "Half-Day Present"
 
 # Clock Time Offset System (in minutes)
 TIME_OFFSET_MINUTES = 0
 
 def get_current_now():
-    """Returns current datetime adjusted by TIME_OFFSET_MINUTES."""
-    base_now = datetime.datetime.now()
+    """Returns current datetime in Indian Standard Time (IST, Asia/Kolkata, UTC+5:30), adjusted by TIME_OFFSET_MINUTES."""
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    base_now = now_utc.astimezone(IST_TZ)
     if TIME_OFFSET_MINUTES != 0:
         return base_now + datetime.timedelta(minutes=TIME_OFFSET_MINUTES)
     return base_now
@@ -806,6 +811,10 @@ def sync_mongo(data_dict):
 def mark_attendance(name, custom_time=None, custom_status=None, remarks=None, custom_date=None):
     """
     Logs or updates attendance in class-isolated CSV & MongoDB database.
+    Configurable Thresholds:
+    - Scans up to 09:10 AM: On Time
+    - Scans 09:11 AM to 09:30 AM: Late
+    - Scans after 09:30 AM: Half-Day Present
     Supports teacher override for OD (On Duty), Late Approval, Permission, and Custom Dates.
     Returns (success: bool, status_message: str)
     """
@@ -831,6 +840,7 @@ def mark_attendance(name, custom_time=None, custom_status=None, remarks=None, cu
 
     if idx_matches:
         row_idx = idx_matches[0]
+        current_status = str(df.at[row_idx, "Status"]).strip()
         
         if custom_status and custom_status != "Auto":
             df.at[row_idx, "Status"] = custom_status
@@ -841,6 +851,17 @@ def mark_attendance(name, custom_time=None, custom_status=None, remarks=None, cu
             log_activity(f"Teacher updated {name} status to '{custom_status}' ({remarks_str}).", "warning")
             return True, f"Updated {name}'s attendance status to {custom_status}!"
 
+        # Any face scan performed after 09:30 AM for an absent or unrecorded student updates status to "Half-Day Present"
+        if now_time_24 > CUTOFF_ABSENT and current_status in ["Absent", "-"]:
+            df.at[row_idx, "Status"] = "Half-Day Present"
+            df.at[row_idx, "In_Time"] = time_str
+            df.at[row_idx, "Remarks"] = "Scanned after 09:30 AM"
+            df.to_csv(target_csv, index=False)
+            sync_mongo(df.loc[row_idx].to_dict())
+            log_activity(f"{name} scanned face after 09:30 AM - Status updated to Half-Day Present.", "info")
+            return True, f"Updated {name}'s status to Half-Day Present (In Time: {time_str})!"
+
+        # Break scan timings
         if "10:40:00" <= now_time_24 <= "11:30:00":
             df.at[row_idx, "Morning_Break"] = f"Done ({short_time_str})"
             df.to_csv(target_csv, index=False)
@@ -871,10 +892,16 @@ def mark_attendance(name, custom_time=None, custom_status=None, remarks=None, cu
 
         return False, f"Attendance for {name} already logged today."
 
+    # First time face scan status threshold evaluation
     if custom_status and custom_status != "Auto":
         status = custom_status
     else:
-        status = "On Time" if now_time_24 <= SHIFT_TIMINGS["IN_TIME_CUTOFF"] else "Late"
+        if now_time_24 <= CUTOFF_ON_TIME:
+            status = "On Time"
+        elif now_time_24 <= CUTOFF_LATE:
+            status = "Late"
+        else:
+            status = "Half-Day Present"
 
     m_break = f"Done ({short_time_str})" if "10:40:00" <= now_time_24 <= "11:30:00" else "-"
     l_break = f"Done ({short_time_str})" if "12:40:00" <= now_time_24 <= "13:45:00" else "-"

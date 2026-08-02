@@ -1381,6 +1381,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (st.includes('OD') || st.includes('DUTY')) {
                 badgeClass = 'badge-od';
                 iconClass = 'fa-id-badge';
+            } else if (st.includes('HALF')) {
+                badgeClass = 'badge-halfday';
+                iconClass = 'fa-user-clock';
             } else if (st.includes('PERMISSION')) {
                 badgeClass = 'badge-permission';
                 iconClass = 'fa-user-clock';
