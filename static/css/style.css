@@ -124,6 +124,23 @@
     --shadow-main: 0 12px 30px -5px rgba(0, 0, 0, 0.6), 0 0 25px rgba(239, 68, 68, 0.25);
 }
 
+/* Theme 8: Red & White Combination */
+[data-theme="red-white"], [data-theme="redwhite"] {
+    --bg-dark: #fcf8f8;
+    --card-bg: rgba(255, 255, 255, 0.96);
+    --card-border: rgba(220, 38, 38, 0.3);
+    --primary: #dc2626;
+    --primary-hover: #b91c1c;
+    --primary-light: rgba(220, 38, 38, 0.12);
+    --success: #059669;
+    --danger: #991b1b;
+    --warning: #d97706;
+    --text-main: #1e1b1b;
+    --text-muted: #655959;
+    --border-color: rgba(220, 38, 38, 0.22);
+    --shadow-main: 0 10px 25px -5px rgba(220, 38, 38, 0.14), 0 0 18px rgba(220, 38, 38, 0.1);
+}
+
 /* Global Reset */
 * {
     margin: 0;

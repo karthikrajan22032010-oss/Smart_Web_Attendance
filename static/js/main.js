@@ -3,8 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeSelector = document.getElementById('themeSelector');
     let savedTheme = localStorage.getItem('portalTheme');
     if (!savedTheme) {
-        savedTheme = 'emerald';
-        localStorage.setItem('portalTheme', 'emerald');
+        savedTheme = 'red-white';
+        localStorage.setItem('portalTheme', 'red-white');
     }
     document.documentElement.setAttribute('data-theme', savedTheme);
     if (themeSelector) {
