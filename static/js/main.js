@@ -676,17 +676,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // Registration Modal System
+    // Registration Modal & reCAPTCHA System
     const regModal = document.getElementById('regModal');
     const btnOpenRegModal = document.getElementById('btnOpenRegModal');
     const closeRegModalBtn = document.getElementById('closeRegModalBtn');
     const cancelRegModalBtn = document.getElementById('cancelRegModalBtn');
     const regModalForm = document.getElementById('regModalForm');
 
+    const recaptchaCheckboxBtn = document.getElementById('recaptchaCheckboxBtn');
+    const recaptchaSpinner = document.getElementById('recaptchaSpinner');
+    const recaptchaCheckmark = document.getElementById('recaptchaCheckmark');
+    const recaptchaCard = document.getElementById('recaptchaCard');
+
+    let isCaptchaVerified = false;
+    let isCaptchaLoading = false;
+
+    function resetRecaptchaState() {
+        isCaptchaVerified = false;
+        isCaptchaLoading = false;
+        if (recaptchaSpinner) recaptchaSpinner.style.display = 'none';
+        if (recaptchaCheckmark) recaptchaCheckmark.style.display = 'none';
+        if (recaptchaCard) {
+            recaptchaCard.classList.remove('recaptcha-verified', 'recaptcha-error');
+        }
+    }
+
+    if (recaptchaCheckboxBtn) {
+        recaptchaCheckboxBtn.addEventListener('click', () => {
+            if (isCaptchaVerified || isCaptchaLoading) return;
+
+            isCaptchaLoading = true;
+            if (recaptchaSpinner) recaptchaSpinner.style.display = 'inline-block';
+            if (recaptchaCheckmark) recaptchaCheckmark.style.display = 'none';
+            if (recaptchaCard) recaptchaCard.classList.remove('recaptcha-error');
+
+            const regError = document.getElementById('regModalErrorMsg');
+            if (regError) regError.style.display = 'none';
+
+            // Simulate reCAPTCHA security token check
+            setTimeout(() => {
+                isCaptchaLoading = false;
+                isCaptchaVerified = true;
+                if (recaptchaSpinner) recaptchaSpinner.style.display = 'none';
+                if (recaptchaCheckmark) recaptchaCheckmark.style.display = 'inline-block';
+                if (recaptchaCard) recaptchaCard.classList.add('recaptcha-verified');
+            }, 650);
+        });
+    }
+
     function toggleRegModal(show) {
         if (regModal) {
-            if (show) regModal.classList.add('active');
-            else regModal.classList.remove('active');
+            if (show) {
+                regModal.classList.add('active');
+                resetRecaptchaState();
+            } else {
+                regModal.classList.remove('active');
+                resetRecaptchaState();
+            }
         }
     }
 
@@ -711,11 +757,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (!isCaptchaVerified) {
+                if (regError) {
+                    regError.textContent = '⚠️ reCAPTCHA Verification Required! Please check "I\'m not a robot".';
+                    regError.style.display = 'block';
+                }
+                if (recaptchaCard) {
+                    recaptchaCard.classList.add('recaptcha-error');
+                    setTimeout(() => recaptchaCard.classList.remove('recaptcha-error'), 450);
+                }
+                return;
+            }
+
             try {
                 const res = await fetch('/api/register_account', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ login_id: regId, class_name: regName, password: regPass })
+                    body: JSON.stringify({ 
+                        login_id: regId, 
+                        class_name: regName, 
+                        password: regPass,
+                        recaptcha_verified: isCaptchaVerified
+                    })
                 });
                 const data = await res.json();
                 if (res.ok && data.success) {

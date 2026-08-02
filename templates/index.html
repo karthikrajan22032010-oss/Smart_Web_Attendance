@@ -94,6 +94,30 @@
                         <input type="password" id="regModalPass" placeholder="Enter Class Password" required style="width: 100%; background: rgba(15, 23, 42, 0.85); color: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 13px;">
                     </div>
 
+                    <!-- reCAPTCHA 'I'm not a robot' Widget Container -->
+                    <div class="recaptcha-wrapper" id="regRecaptchaWrapper">
+                        <div class="recaptcha-card" id="recaptchaCard">
+                            <div class="recaptcha-left">
+                                <button type="button" class="recaptcha-checkbox-btn" id="recaptchaCheckboxBtn" aria-label="I'm not a robot checkbox">
+                                    <span class="recaptcha-checkbox-box" id="recaptchaBox">
+                                        <i class="fa-solid fa-spinner fa-spin recaptcha-spinner-icon" id="recaptchaSpinner" style="display: none;"></i>
+                                        <i class="fa-solid fa-check recaptcha-check-icon" id="recaptchaCheckmark" style="display: none;"></i>
+                                    </span>
+                                </button>
+                                <span class="recaptcha-label-text">I'm not a robot</span>
+                            </div>
+                            <div class="recaptcha-right">
+                                <div class="recaptcha-brand-icon">
+                                    <i class="fa-solid fa-arrows-rotate text-primary"></i>
+                                </div>
+                                <span class="recaptcha-brand-title">reCAPTCHA</span>
+                                <div class="recaptcha-brand-links">
+                                    <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy</a> • 
+                                    <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Terms</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <div id="regModalErrorMsg" style="display: none; color: var(--danger); font-size: 12px; font-weight: 600;"></div>
                 </div>

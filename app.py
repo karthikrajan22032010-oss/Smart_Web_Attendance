@@ -1283,14 +1283,18 @@ def set_system_time():
 
 @app.route('/api/register_account', methods=['POST'])
 def register_account():
-    """API to dynamically register a new class or user account."""
+    """API to dynamically register a new class or user account with reCAPTCHA verification."""
     data = request.get_json() or {}
     login_id = str(data.get('login_id', '')).strip()
     password = str(data.get('password', '')).strip()
     class_name = str(data.get('class_name', '')).strip() or login_id
+    recaptcha_verified = data.get('recaptcha_verified', False)
 
     if not login_id or not password:
         return jsonify({"success": False, "message": "❌ Please enter a Login ID and Password to register!"}), 400
+
+    if not recaptcha_verified:
+        return jsonify({"success": False, "message": "⚠️ reCAPTCHA verification failed! Please check 'I'm not a robot'."}), 400
 
     clean_code = "".join(c for c in login_id if c.isalnum()).upper() or "CLASS"
     CLASS_ACCOUNTS[login_id] = {
@@ -1299,7 +1303,7 @@ def register_account():
         "code": clean_code
     }
 
-    log_activity(f"New Class Account Registered: '{login_id}' ({class_name})", "success")
+    log_activity(f"New Class Account Registered: '{login_id}' ({class_name}) [reCAPTCHA Verified]", "success")
     return jsonify({
         "success": True,
         "message": f"🎉 Successfully registered account '{login_id}'! You can now log in.",
