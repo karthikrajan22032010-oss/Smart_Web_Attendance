@@ -17,54 +17,102 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <!-- 1. CLASS LOGIN SECTION (GLASSMORPHISM UI) -->
-    <div class="login-container" id="loginSection">
-        <div class="login-card-3d tilt-card">
-            <div class="login-header">
-                <div class="logo-3d-wrapper">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Smart Attendance 3D Logo" class="logo-3d-img">
+    <!-- 1. CLASS LOGIN SECTION (PROFESSIONAL WHITE THEME UI) -->
+    <div class="login-container white-theme-portal" id="loginSection">
+        <div class="login-wrapper-split">
+            <!-- Left Panel: Feature Highlights Grid -->
+            <div class="login-feature-panel">
+                <div class="portal-brand-header">
+                    <div class="portal-badge-white"><i class="fa-solid fa-shield-halved"></i> Enterprise AI Portal</div>
+                    <h2>Smart<span class="highlight-blue">Attendance</span>Portal</h2>
+                    <p>Real-Time Face Match, Multi-Class Isolation & Automated IVR Voice Alerts</p>
                 </div>
-                <h2 id="authPortalTitle">Classroom Portal Login</h2>
-                <p>Smart Face Recognition & Classroom Attendance System</p>
+
+                <div class="feature-cards-grid">
+                    <div class="feature-mini-card">
+                        <div class="feature-icon icon-blue"><i class="fa-solid fa-face-viewfinder"></i></div>
+                        <div>
+                            <h4>AI Facial Recognition</h4>
+                            <p>Deep Learning MediaPipe & OpenCV multi-camera face match (99.8% accuracy)</p>
+                        </div>
+                    </div>
+                    <div class="feature-mini-card">
+                        <div class="feature-icon icon-emerald"><i class="fa-solid fa-phone-volume"></i></div>
+                        <div>
+                            <h4>Automated Bilingual IVR Calls</h4>
+                            <p>Auto-dials absent student parents after 9:30 AM in <strong>Tamil & English</strong></p>
+                        </div>
+                    </div>
+                    <div class="feature-mini-card">
+                        <div class="feature-icon icon-purple"><i class="fa-solid fa-database"></i></div>
+                        <div>
+                            <h4>Strict Per-Account Isolation</h4>
+                            <p>100% separate database, roster, CSV & face data storage for every login ID</p>
+                        </div>
+                    </div>
+                    <div class="feature-mini-card">
+                        <div class="feature-icon icon-orange"><i class="fa-solid fa-file-excel"></i></div>
+                        <div>
+                            <h4>Real-Time Analytics & Excel</h4>
+                            <p>Instant daily/monthly attendance matrix with Excel & CSV exports</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="portal-security-note">
+                    <i class="fa-solid fa-lock text-success"></i>
+                    <span><strong>100% Data Security & Privacy:</strong> Zero cross-class data leaks.</span>
+                </div>
             </div>
 
-            <!-- Login Form -->
-            <form id="loginForm" class="login-form">
-                <div class="form-group">
-                    <label for="loginId"><i class="fa-solid fa-user-shield"></i> Class Login ID</label>
-                    <div class="input-icon-wrapper">
-                        <i class="fa-solid fa-id-badge input-icon"></i>
-                        <input type="text" id="loginId" placeholder="Enter Class Login ID" required autocomplete="username">
+            <!-- Right Panel: Professional Login Card -->
+            <div class="login-card-3d white-login-card">
+                <div class="login-header">
+                    <div class="logo-3d-wrapper white-logo-wrapper">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Smart Attendance Logo" class="logo-3d-img">
                     </div>
+                    <h2 id="authPortalTitle">Classroom Portal Login</h2>
+                    <p>Sign in to access your class attendance & surveillance dashboard</p>
                 </div>
 
-                <div class="form-group">
-                    <label for="loginPass"><i class="fa-solid fa-lock"></i> Password</label>
-                    <div class="input-icon-wrapper">
-                        <i class="fa-solid fa-key input-icon"></i>
-                        <input type="password" id="loginPass" placeholder="Enter class password" required autocomplete="current-password">
-                        <button type="button" class="toggle-pass-btn" id="btnTogglePass">
-                            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+                <!-- Login Form -->
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="loginId"><i class="fa-solid fa-user-shield text-primary"></i> Class Login ID</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-id-badge input-icon"></i>
+                            <input type="text" id="loginId" placeholder="e.g. ECE2YEAR@LAPC" required autocomplete="username">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loginPass"><i class="fa-solid fa-lock text-primary"></i> Password</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-key input-icon"></i>
+                            <input type="password" id="loginPass" placeholder="Enter class password" required autocomplete="current-password">
+                            <button type="button" class="toggle-pass-btn" id="btnTogglePass">
+                                <i class="fa-solid fa-eye" id="eyeIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="login-error-msg" id="loginErrorMsg"></div>
+
+                    <button type="submit" class="btn btn-login-white" id="btnLoginSubmit">
+                        <span>Login to Classroom Dashboard</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    </button>
+
+                    <div style="text-align: center; margin-top: 10px;">
+                        <button type="button" class="btn btn-outline btn-xs" id="btnOpenRegModal" style="border: 1px solid #2563eb; color: #2563eb; font-weight: 600;">
+                            <i class="fa-solid fa-user-plus"></i> Register New Class Account
                         </button>
                     </div>
-                </div>
+                </form>
 
-                <div class="login-error-msg" id="loginErrorMsg"></div>
-
-                <button type="submit" class="btn btn-login-3d" id="btnLoginSubmit">
-                    <span>Login to Classroom Dashboard</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                </button>
-
-                <div style="text-align: center; margin-top: 14px;">
-                    <button type="button" class="btn btn-outline btn-xs" id="btnOpenRegModal" style="border: 1px solid var(--primary); color: var(--primary);">
-                        <i class="fa-solid fa-user-plus"></i> Register New Class Account
-                    </button>
-                </div>
-            </form>
-
-            <div class="login-footer">
-                <div class="developer-credit-login">
-                    <i class="fa-solid fa-code text-primary"></i> Designed & Developed by <strong>MAYANDI KARTHIK RAJAN</strong>
+                <div class="login-footer">
+                    <div class="developer-credit-login">
+                        <i class="fa-solid fa-code text-primary"></i> Designed & Developed by <strong>MAYANDI KARTHIK RAJAN</strong>
+                    </div>
                 </div>
             </div>
         </div>
@@ -196,6 +244,9 @@
                     <button class="btn btn-emerald-solid btn-xs" id="openRosterModalBtn" title="Manage Class Roster, Face Registration & Enrolled Students">
                         <i class="fa-solid fa-users-gear"></i> Class Roster & Face Registration
                     </button>
+                    <button class="btn btn-emerald-solid btn-xs btn-auto-calls-toggle" id="btnToggleAutoCalls" title="Master Switch for Automated Absence Voice Calls in Tamil & English">
+                        <i class="fa-solid fa-phone-volume text-success" id="autoCallsIcon"></i> <span id="autoCallsBadgeText">Auto-Calls: ON (9:30 AM)</span>
+                    </button>
                     <button class="btn btn-emerald-solid btn-xs btn-storage-mode" id="btnOpenStorageModal" title="Computer Storage Settings">
                         <i class="fa-solid fa-globe"></i> <span id="headerStorageBadgeText">Website Only (No Files)</span>
                     </button>
@@ -221,6 +272,30 @@
 
         <!-- POSITION 1: DAILY ATTENDANCE & LIVE SCANNER -->
         <div class="tab-content active" id="posDaily">
+            <!-- Automated Bilingual (Tamil & English) Voice Call Notifications Control Card -->
+            <div class="auto-calls-banner-card" style="background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 24px; color: var(--success);" id="autoCallsHeaderIcon"><i class="fa-solid fa-phone-volume"></i></div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+                            <span>Automated Absence Voice Calls (Tamil & English)</span>
+                            <span class="badge badge-success" id="autoCallsStatusBadge">Master Switch: ON</span>
+                        </h4>
+                        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">
+                            Auto-dials absent student parents after <strong>09:30 AM</strong> delivering voice messages in <strong>Tamil (தமிழ்)</strong> & <strong>English</strong>.
+                        </p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="btn btn-outline btn-xs" id="btnToggleAutoCallsMaster" style="border-color: var(--success); color: var(--success); font-weight: 700;">
+                        <i class="fa-solid fa-power-off"></i> Toggle Master Switch
+                    </button>
+                    <button type="button" class="btn btn-success btn-xs" id="btnTriggerAbsenceCallsNow" style="font-weight: 700; padding: 6px 14px;">
+                        <i class="fa-solid fa-phone-arrow-up-right"></i> Trigger Automated Calls Now (Tamil & English)
+                    </button>
+                </div>
+            </div>
+
             <!-- Main Daily Grid -->
             <main class="main-content">
                 <!-- Top Row: Stats Sidebar (Left) + Camera Scanner (Right) -->

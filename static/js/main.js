@@ -1817,6 +1817,74 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Automated Absence Voice Call (Tamil & English) Controller
+    const btnToggleAutoCalls = document.getElementById('btnToggleAutoCalls');
+    const btnToggleAutoCallsMaster = document.getElementById('btnToggleAutoCallsMaster');
+    const btnTriggerAbsenceCallsNow = document.getElementById('btnTriggerAbsenceCallsNow');
+
+    async function fetchAutoCallsStatus() {
+        try {
+            const res = await fetch('/api/auto_calls_status');
+            const data = await res.json();
+            if (res.ok && data.success) {
+                updateAutoCallsUI(data.enabled);
+            }
+        } catch (err) {
+            console.error("Error fetching auto calls status:", err);
+        }
+    }
+
+    function updateAutoCallsUI(isEnabled) {
+        const badgeText = document.getElementById('autoCallsBadgeText');
+        const icon = document.getElementById('autoCallsIcon');
+        const statusBadge = document.getElementById('autoCallsStatusBadge');
+
+        if (badgeText) badgeText.textContent = isEnabled ? 'Auto-Calls: ON (9:30 AM)' : 'Auto-Calls: OFF';
+        if (icon) icon.className = isEnabled ? 'fa-solid fa-phone-volume text-success' : 'fa-solid fa-phone-slash text-danger';
+        if (statusBadge) {
+            statusBadge.className = isEnabled ? 'badge badge-success' : 'badge badge-danger';
+            statusBadge.textContent = isEnabled ? 'Master Switch: ON' : 'Master Switch: OFF';
+        }
+    }
+
+    async function toggleAutoCallsState() {
+        try {
+            const res = await fetch('/api/toggle_auto_calls', { method: 'POST' });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast(data.message, data.enabled ? 'success' : 'warning');
+                updateAutoCallsUI(data.enabled);
+            }
+        } catch (err) {
+            showToast('Error toggling automated voice call switch', 'danger');
+        }
+    }
+
+    async function triggerAbsenceCallsNow() {
+        showToast('📞 Initiating automated bilingual (Tamil & English) voice calls to absent student parent(s)...', 'info');
+        try {
+            const res = await fetch('/api/trigger_absence_calls', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ force_manual: true })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message || 'Failed to trigger absence calls', 'danger');
+            }
+        } catch (err) {
+            showToast('Error placing automated absence calls', 'danger');
+        }
+    }
+
+    if (btnToggleAutoCalls) btnToggleAutoCalls.addEventListener('click', toggleAutoCallsState);
+    if (btnToggleAutoCallsMaster) btnToggleAutoCallsMaster.addEventListener('click', toggleAutoCallsState);
+    if (btnTriggerAbsenceCallsNow) btnTriggerAbsenceCallsNow.addEventListener('click', triggerAbsenceCallsNow);
+
+    fetchAutoCallsStatus();
+
     // Clear Log
     if (btnClearLog) {
         btnClearLog.addEventListener('click', async () => {

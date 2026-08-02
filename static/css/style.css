@@ -2142,6 +2142,205 @@ body {
     text-decoration: underline;
 }
 
+/* ==========================================================================
+   Professional White Theme Login Portal & Split Feature Showcase
+   ========================================================================== */
+.white-theme-portal {
+    background: linear-gradient(135deg, #f8fafc, #edf2f7) !important;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+}
+
+.login-wrapper-split {
+    display: flex;
+    max-width: 1050px;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px -10px rgba(15, 23, 42, 0.15), 0 0 30px rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    overflow: hidden;
+}
+
+.login-feature-panel {
+    flex: 1.2;
+    background: linear-gradient(145deg, #0f172a, #1e293b);
+    color: #ffffff;
+    padding: 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.portal-badge-white {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.portal-brand-header h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+}
+
+.highlight-blue {
+    color: #38bdf8;
+}
+
+.portal-brand-header p {
+    font-size: 14px;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+.feature-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.feature-mini-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.25s ease, background 0.25s ease;
+}
+
+.feature-mini-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #38bdf8;
+}
+
+.feature-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.icon-blue { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+.icon-emerald { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.icon-purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+.icon-orange { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+.feature-mini-card h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.feature-mini-card p {
+    font-size: 12px;
+    color: #cbd5e1;
+    margin: 4px 0 0 0;
+    line-height: 1.4;
+}
+
+.portal-security-note {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #34d399;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.white-login-card {
+    flex: 1;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 44px !important;
+}
+
+.white-login-card .login-header h2 {
+    color: #0f172a !important;
+    background: none !important;
+    -webkit-text-fill-color: initial !important;
+    font-weight: 800;
+}
+
+.white-login-card .login-header p {
+    color: #64748b !important;
+}
+
+.white-login-card label {
+    color: #1e293b !important;
+    font-weight: 700;
+}
+
+.white-login-card input {
+    background: #f8fafc !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+.white-login-card input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+.btn-login-white {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.25s ease;
+}
+
+.btn-login-white:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(37, 99, 235, 0.45);
+}
+
+@media (max-width: 860px) {
+    .login-wrapper-split {
+        flex-direction: column;
+    }
+    .feature-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
 
 
 
