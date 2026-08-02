@@ -346,12 +346,24 @@ body {
     font-size: 18px;
 }
 
-.card-total .stat-icon { background: var(--primary-light); color: var(--primary); }
-.card-ontime .stat-icon { background: var(--success-light); color: var(--success); }
-.card-late .stat-icon { background: var(--danger-light); color: var(--danger); }
-.card-od .stat-icon { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
-.card-absent .stat-icon { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-.card-enrolled .stat-icon { background: var(--warning-light); color: var(--warning); }
+/* All Stat Cards & Leftside Sidebar Boxes - Pure White Theme */
+.stat-card,
+.stats-sidebar .stat-card,
+.stats-sidebar .card {
+    background: #ffffff !important;
+    border: 1.5px solid rgba(226, 232, 240, 0.9) !important;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    border-radius: 14px !important;
+    color: #0f172a !important;
+}
+
+.card-strength .stat-icon { background: rgba(37, 99, 235, 0.12) !important; color: #2563eb !important; }
+.card-total .stat-icon { background: rgba(5, 150, 105, 0.12) !important; color: #059669 !important; }
+.card-absent .stat-icon { background: rgba(220, 38, 38, 0.12) !important; color: #dc2626 !important; }
+.card-od .stat-icon { background: rgba(147, 51, 234, 0.12) !important; color: #9333ea !important; }
+.card-ontime .stat-icon { background: rgba(5, 150, 105, 0.12) !important; color: #059669 !important; }
+.card-late .stat-icon { background: rgba(217, 119, 6, 0.12) !important; color: #d97706 !important; }
+.card-enrolled .stat-icon { background: rgba(37, 99, 235, 0.12) !important; color: #2563eb !important; }
 
 .stat-details {
     min-width: 0;
@@ -359,8 +371,8 @@ body {
 
 .stat-title {
     font-size: 12px;
-    color: var(--text-muted);
-    font-weight: 500;
+    color: #475569 !important;
+    font-weight: 600 !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -369,7 +381,8 @@ body {
 
 .stat-number {
     font-size: 22px;
-    font-weight: 700;
+    font-weight: 800;
+    color: #0f172a !important;
     margin-top: 2px;
 }
 
