@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Theme Selector Logic
     const themeSelector = document.getElementById('themeSelector');
     let savedTheme = localStorage.getItem('portalTheme');
-    if (!savedTheme || savedTheme === 'sapphire') {
+    if (!savedTheme) {
         savedTheme = 'emerald';
         localStorage.setItem('portalTheme', 'emerald');
     }
