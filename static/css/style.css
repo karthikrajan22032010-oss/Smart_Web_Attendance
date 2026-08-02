@@ -390,8 +390,8 @@ body {
 
 .daily-top-row {
     display: grid;
-    grid-template-columns: 220px 1fr;
-    gap: 8px;
+    grid-template-columns: 310px 1fr;
+    gap: 12px;
     align-items: start;
     width: 100%;
 }

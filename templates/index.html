@@ -364,6 +364,64 @@
                                 <h2 class="stat-number" id="statEnrolled">0</h2>
                             </div>
                         </div>
+
+                        <!-- Leftside Box 1: Attended Students Today -->
+                        <div class="card tilt-card" style="border-top: 4px solid var(--success); margin-top: 6px;">
+                            <div class="card-header" style="padding: 10px 12px;">
+                                <div class="card-title" style="font-size: 13px;">
+                                    <i class="fa-solid fa-user-check text-success"></i>
+                                    <span>Attended Students Today</span>
+                                </div>
+                                <span class="badge badge-success" id="attendedBoxCount" style="font-size: 10px;">0 Present</span>
+                            </div>
+                            <div style="padding: 10px; max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;" id="attendedStudentsBoxContainer">
+                                <span class="text-muted small">No students attended yet today.</span>
+                            </div>
+                        </div>
+
+                        <!-- Leftside Box 2: Not Attended (Absent) Students -->
+                        <div class="card tilt-card" style="border-top: 4px solid var(--danger); margin-top: 4px;">
+                            <div class="card-header" style="padding: 10px 12px;">
+                                <div class="card-title" style="font-size: 13px;">
+                                    <i class="fa-solid fa-user-xmark text-danger"></i>
+                                    <span>Not Attended (Absent) Students</span>
+                                </div>
+                                <span class="badge badge-danger" id="notAttendedBoxCount" style="font-size: 10px;">0 Absent</span>
+                            </div>
+                            <div style="padding: 10px; max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;" id="notAttendedStudentsBoxContainer">
+                                <span class="text-muted small">All enrolled students are present!</span>
+                            </div>
+                        </div>
+
+                        <!-- Leftside Box 3: Complete Overall Attendance History -->
+                        <div class="card table-card tilt-card" style="margin-top: 4px; padding: 10px;">
+                            <div class="card-header" style="padding: 8px 10px;">
+                                <div class="card-title" style="font-size: 13px;">
+                                    <i class="fa-solid fa-clock-rotate-left text-primary"></i>
+                                    <span>Overall Attendance History</span>
+                                </div>
+                                <span class="badge badge-info" id="overallHistoryBadge" style="font-size: 10px;">Logs</span>
+                            </div>
+
+                            <div class="table-responsive" style="max-height: 250px;">
+                                <table class="attendance-table" id="overallHistoryTable" style="font-size: 11px;">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Name</th>
+                                            <th>Date</th>
+                                            <th>Time In</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="overallHistoryTableBody">
+                                        <tr class="empty-row">
+                                            <td colspan="5">No overall historical attendance records found.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </aside>
 
                     <!-- Right Column: Live Video Stream Feed -->
@@ -477,74 +535,6 @@
                                         <div class="empty-state">
                                             <i class="fa-solid fa-clipboard-list empty-clipboard-icon"></i>
                                             <p class="empty-state-text">No attendance logged today yet.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Two New Dedicated Display Boxes: Attended Students & Not Attended (Absent) Students -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; margin-bottom: 16px;">
-                    <!-- Dedicated Box 1: Attended Students Today -->
-                    <div class="card tilt-card" style="border-top: 4px solid var(--success);">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fa-solid fa-user-check text-success"></i>
-                                <span>Attended Students Today</span>
-                            </div>
-                            <span class="badge badge-success" id="attendedBoxCount">0 Present</span>
-                        </div>
-                        <div style="padding: 12px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;" id="attendedStudentsBoxContainer">
-                            <span class="text-muted small">No students attended yet today.</span>
-                        </div>
-                    </div>
-
-                    <!-- Dedicated Box 2: Not Attended (Absent) Students Today -->
-                    <div class="card tilt-card" style="border-top: 4px solid var(--danger);">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fa-solid fa-user-xmark text-danger"></i>
-                                <span>Not Attended (Absent) Students</span>
-                            </div>
-                            <span class="badge badge-danger" id="notAttendedBoxCount">0 Absent</span>
-                        </div>
-                        <div style="padding: 12px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;" id="notAttendedStudentsBoxContainer">
-                            <span class="text-muted small">All enrolled students are present!</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dedicated Box 3: Complete Overall Attendance History at Bottom -->
-                <div class="card table-card tilt-card" style="margin-top: 16px;">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fa-solid fa-clock-rotate-left text-primary"></i>
-                            <span>Complete Overall Attendance History</span>
-                        </div>
-                        <span class="badge badge-info" id="overallHistoryBadge">Complete History Logs</span>
-                    </div>
-
-                    <div class="table-responsive" style="max-height: 350px;">
-                        <table class="attendance-table" id="overallHistoryTable">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Student Name</th>
-                                    <th>Date</th>
-                                    <th>Time In</th>
-                                    <th>Time Out</th>
-                                    <th>Status</th>
-                                    <th>Remarks / Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody id="overallHistoryTableBody">
-                                <tr class="empty-row">
-                                    <td colspan="7">
-                                        <div class="empty-state">
-                                            <i class="fa-solid fa-clock-rotate-left empty-clipboard-icon"></i>
-                                            <p class="empty-state-text">No overall historical attendance records found.</p>
                                         </div>
                                     </td>
                                 </tr>
