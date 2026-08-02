@@ -417,14 +417,26 @@ def get_timings_file_path():
     timings_dir = get_storage_subfolder("class_timings")
     return os.path.join(timings_dir, f"timings_{code}.json")
 
+DEFAULT_TIMING_ITEMS = [
+    {"id": "in_time", "label": "In Time (On Time Cutoff)", "time": "09:10:00", "icon": "fa-right-to-bracket"},
+    {"id": "late_time", "label": "Late Cutoff (to Half-Day)", "time": "09:30:00", "icon": "fa-triangle-exclamation"},
+    {"id": "morn_time", "label": "Morning Refresh Break", "time": "10:50:00", "icon": "fa-mug-hot"},
+    {"id": "lunch_time", "label": "Lunch Break Time", "time": "12:50:00", "icon": "fa-utensils"},
+    {"id": "eve_time", "label": "Evening Refresh Break", "time": "15:50:00", "icon": "fa-cookie-bite"},
+    {"id": "out_time", "label": "Departure Out Time", "time": "17:10:00", "icon": "fa-right-from-bracket"}
+]
+
 def load_class_timings():
     global SHIFT_TIMINGS, CUTOFF_ON_TIME, CUTOFF_LATE, CUTOFF_ABSENT
     fpath = get_timings_file_path()
+    items = list(DEFAULT_TIMING_ITEMS)
     if os.path.exists(fpath):
         try:
             with open(fpath, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 if isinstance(data, dict):
+                    if 'items' in data and isinstance(data['items'], list):
+                        items = data['items']
                     if 'in_time' in data:
                         SHIFT_TIMINGS["IN_TIME_CUTOFF"] = data['in_time']
                         CUTOFF_ON_TIME = data['in_time']
@@ -441,6 +453,7 @@ def load_class_timings():
                         SHIFT_TIMINGS["OUT_TIME"] = data['out_time']
         except Exception as err:
             print(f"[WARNING] Error loading class timings: {err}")
+    return items
 
 CSV_COLUMNS = ["Name", "Date", "In_Time", "Out_Time", "Status", "Morning_Break", "Lunch_Break", "Evening_Break", "Remarks"]
 surveillance_events = []
@@ -1437,10 +1450,11 @@ def delete_account():
 
 @app.route('/api/get_shift_timings', methods=['GET'])
 def get_shift_timings_api():
-    """API returning current class schedule and threshold timings."""
-    load_class_timings()
+    """API returning current class schedule and threshold timings with dynamic items list."""
+    items = load_class_timings()
     return jsonify({
         "success": True,
+        "items": items,
         "timings": {
             "in_time": SHIFT_TIMINGS.get("IN_TIME_CUTOFF", "09:10:00"),
             "late_time": CUTOFF_LATE,
@@ -1454,61 +1468,81 @@ def get_shift_timings_api():
 
 @app.route('/api/update_shift_timings', methods=['POST'])
 def update_shift_timings_api():
-    """API to dynamically update and persist class schedule cutoffs and break timings."""
+    """API to dynamically update, add, remove, and persist class schedule cutoffs and break timings."""
     global SHIFT_TIMINGS, CUTOFF_ON_TIME, CUTOFF_LATE, CUTOFF_ABSENT
     data = request.get_json() or {}
     
-    in_t = data.get('in_time', '09:10:00')
-    late_t = data.get('late_time', '09:30:00')
-    morn_t = data.get('morn_time', '10:50:00')
-    lunch_t = data.get('lunch_time', '12:50:00')
-    eve_t = data.get('eve_time', '15:50:00')
-    out_t = data.get('out_time', '17:10:00')
+    items = data.get('items', [])
+    if not items:
+        # Fallback to single fields
+        in_t = data.get('in_time', '09:10:00')
+        late_t = data.get('late_time', '09:30:00')
+        morn_t = data.get('morn_time', '10:50:00')
+        lunch_t = data.get('lunch_time', '12:50:00')
+        eve_t = data.get('eve_time', '15:50:00')
+        out_t = data.get('out_time', '17:10:00')
 
-    if len(in_t) == 5: in_t += ":00"
-    if len(late_t) == 5: late_t += ":00"
-    if len(morn_t) == 5: morn_t += ":00"
-    if len(lunch_t) == 5: lunch_t += ":00"
-    if len(eve_t) == 5: eve_t += ":00"
-    if len(out_t) == 5: out_t += ":00"
+        if len(in_t) == 5: in_t += ":00"
+        if len(late_t) == 5: late_t += ":00"
+        if len(morn_t) == 5: morn_t += ":00"
+        if len(lunch_t) == 5: lunch_t += ":00"
+        if len(eve_t) == 5: eve_t += ":00"
+        if len(out_t) == 5: out_t += ":00"
 
-    SHIFT_TIMINGS["IN_TIME_CUTOFF"] = in_t
-    CUTOFF_ON_TIME = in_t
-    CUTOFF_LATE = late_t
-    CUTOFF_ABSENT = late_t
-    SHIFT_TIMINGS["MORNING_REFRESH"] = morn_t
-    SHIFT_TIMINGS["LUNCH_BREAK"] = lunch_t
-    SHIFT_TIMINGS["EVENING_REFRESH"] = eve_t
-    SHIFT_TIMINGS["OUT_TIME"] = out_t
+        items = [
+            {"id": "in_time", "label": "In Time", "time": in_t, "icon": "fa-right-to-bracket"},
+            {"id": "late_time", "label": "Late Cutoff", "time": late_t, "icon": "fa-triangle-exclamation"},
+            {"id": "morn_time", "label": "Morning Break", "time": morn_t, "icon": "fa-mug-hot"},
+            {"id": "lunch_time", "label": "Lunch Break", "time": lunch_t, "icon": "fa-utensils"},
+            {"id": "eve_time", "label": "Evening Break", "time": eve_t, "icon": "fa-cookie-bite"},
+            {"id": "out_time", "label": "Out Time", "time": out_t, "icon": "fa-right-from-bracket"}
+        ]
+    else:
+        # Clean item time strings
+        for item in items:
+            t = str(item.get('time', '09:00')).strip()
+            if len(t) == 5:
+                t += ":00"
+            item['time'] = t
+
+            lbl_lower = str(item.get('label', '')).lower()
+            if 'in' in lbl_lower or 'on time' in lbl_lower:
+                SHIFT_TIMINGS["IN_TIME_CUTOFF"] = t
+                CUTOFF_ON_TIME = t
+            elif 'late' in lbl_lower:
+                CUTOFF_LATE = t
+                CUTOFF_ABSENT = t
+            elif 'morn' in lbl_lower:
+                SHIFT_TIMINGS["MORNING_REFRESH"] = t
+            elif 'lunch' in lbl_lower:
+                SHIFT_TIMINGS["LUNCH_BREAK"] = t
+            elif 'eve' in lbl_lower:
+                SHIFT_TIMINGS["EVENING_REFRESH"] = t
+            elif 'out' in lbl_lower or 'depart' in lbl_lower:
+                SHIFT_TIMINGS["OUT_TIME"] = t
 
     fpath = get_timings_file_path()
     try:
         os.makedirs(os.path.dirname(fpath), exist_ok=True)
         with open(fpath, 'w', encoding='utf-8') as f:
             json.dump({
-                "in_time": in_t,
-                "late_time": late_t,
-                "morn_time": morn_t,
-                "lunch_time": lunch_t,
-                "eve_time": eve_t,
-                "out_time": out_t
+                "items": items,
+                "in_time": CUTOFF_ON_TIME,
+                "late_time": CUTOFF_LATE,
+                "morn_time": SHIFT_TIMINGS.get("MORNING_REFRESH", "10:50:00"),
+                "lunch_time": SHIFT_TIMINGS.get("LUNCH_BREAK", "12:50:00"),
+                "eve_time": SHIFT_TIMINGS.get("EVENING_REFRESH", "15:50:00"),
+                "out_time": SHIFT_TIMINGS.get("OUT_TIME", "17:10:00")
             }, f, indent=2)
     except Exception as err:
         print(f"[WARNING] Error saving shift timings: {err}")
 
-    log_activity(f"[{get_class_code()}] Updated Class Schedule Timings (In: {in_t}, Late: {late_t}, Out: {out_t})", "success")
+    log_activity(f"[{get_class_code()}] Updated Class Schedule Timings ({len(items)} slots active).", "success")
 
     return jsonify({
         "success": True,
-        "message": "🎉 Successfully updated class schedule & threshold timings!",
-        "timings": {
-            "in_time": in_t,
-            "late_time": late_t,
-            "morn_time": morn_t,
-            "lunch_time": lunch_t,
-            "eve_time": eve_t,
-            "out_time": out_t
-        }
+        "message": f"🎉 Successfully saved schedule timings ({len(items)} slots active)!",
+        "items": items
     })
 
 

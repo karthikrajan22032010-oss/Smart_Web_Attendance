@@ -190,45 +190,23 @@
 
     <!-- EDIT CLASS SCHEDULE & THRESHOLD TIMINGS MODAL -->
     <div class="modal-backdrop" id="editTimingsModal">
-        <div class="modal-card tilt-card" style="max-width: 520px;">
+        <div class="modal-card tilt-card" style="max-width: 580px;">
             <div class="modal-header">
                 <h3><i class="fa-solid fa-clock text-primary"></i> Edit Class Schedule & Threshold Timings</h3>
                 <button type="button" class="close-btn" id="closeEditTimingsModalBtn">&times;</button>
             </div>
             <form id="editTimingsForm">
-                <div class="modal-body">
-                    <p class="text-muted small" style="margin-bottom: 12px;">
-                        Update the entry cutoffs, break windows, and departure times. All face scans will evaluate attendance based on these thresholds.
+                <div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
+                    <p class="text-muted small" style="margin-bottom: 14px;">
+                        Manage entrance cutoffs, break windows, and departure times. You can edit timing slots, remove any unneeded timings using the trash icon 🗑️, or add new timing slots using the button below.
                     </p>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editInTime"><i class="fa-solid fa-right-to-bracket text-success"></i> In Time (On Time Cutoff):</label>
-                            <input type="time" id="editInTime" class="form-control" value="09:10" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editLateTime"><i class="fa-solid fa-triangle-exclamation text-danger"></i> Late Cutoff (to Half-Day):</label>
-                            <input type="time" id="editLateTime" class="form-control" value="09:30" required>
-                        </div>
+                    <div id="timingsContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Dynamic Timing Items Rendered Here -->
                     </div>
-                    <div class="form-row" style="margin-top: 10px;">
-                        <div class="form-group">
-                            <label for="editMornTime"><i class="fa-solid fa-mug-hot text-info"></i> Morning Refresh Break:</label>
-                            <input type="time" id="editMornTime" class="form-control" value="10:50" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editLunchTime"><i class="fa-solid fa-utensils text-warning"></i> Lunch Break Time:</label>
-                            <input type="time" id="editLunchTime" class="form-control" value="12:50" required>
-                        </div>
-                    </div>
-                    <div class="form-row" style="margin-top: 10px;">
-                        <div class="form-group">
-                            <label for="editEveTime"><i class="fa-solid fa-cookie-bite text-primary"></i> Evening Refresh Break:</label>
-                            <input type="time" id="editEveTime" class="form-control" value="15:50" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editOutTime"><i class="fa-solid fa-right-from-bracket text-purple"></i> Departure Out Time:</label>
-                            <input type="time" id="editOutTime" class="form-control" value="17:10" required>
-                        </div>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="btnAddTimingRow" style="border-radius: 20px; padding: 5px 16px;">
+                            <i class="fa-solid fa-plus"></i> Add New Timing Slot
+                        </button>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -260,7 +238,7 @@
             </div>
 
             <div class="header-right-group">
-                <div class="schedule-badges">
+                <div class="schedule-badges" id="scheduleBadgesRow">
                     <span class="badge-item badge-blue" title="Morning Entrance Cutoff"><i class="fa-solid fa-right-to-bracket"></i> In: <strong id="hdrInTime">09:10 AM</strong></span>
                     <span class="badge-item badge-blue" title="Morning Break Window"><i class="fa-solid fa-mug-hot"></i> Morn: <strong id="hdrMornTime">10:50 AM</strong></span>
                     <span class="badge-item badge-blue" title="Lunch Break Window"><i class="fa-solid fa-utensils"></i> Lunch: <strong id="hdrLunchTime">12:50 PM</strong></span>

@@ -107,12 +107,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (syncTimeModal) syncTimeModal.classList.remove('active');
     };
 
-    // Edit Class Timings Modal Elements
+    // Dynamic Class Timings Cache & Handlers
     const editTimingsModal = document.getElementById('editTimingsModal');
     const btnOpenEditTimingsModal = document.getElementById('btnOpenEditTimingsModal');
     const closeEditTimingsModalBtn = document.getElementById('closeEditTimingsModalBtn');
     const cancelEditTimingsBtn = document.getElementById('cancelEditTimingsBtn');
     const editTimingsForm = document.getElementById('editTimingsForm');
+    const timingsContainer = document.getElementById('timingsContainer');
+    const btnAddTimingRow = document.getElementById('btnAddTimingRow');
+    const scheduleBadgesRow = document.getElementById('scheduleBadgesRow');
+
+    let cachedTimingItems = [
+        { id: "in_time", label: "In Time (On Time Cutoff)", time: "09:10:00", icon: "fa-right-to-bracket" },
+        { id: "late_time", label: "Late Cutoff (to Half-Day)", time: "09:30:00", icon: "fa-triangle-exclamation" },
+        { id: "morn_time", label: "Morning Refresh Break", time: "10:50:00", icon: "fa-mug-hot" },
+        { id: "lunch_time", label: "Lunch Break Time", time: "12:50:00", icon: "fa-utensils" },
+        { id: "eve_time", label: "Evening Refresh Break", time: "15:50:00", icon: "fa-cookie-bite" },
+        { id: "out_time", label: "Departure Out Time", time: "17:10:00", icon: "fa-right-from-bracket" }
+    ];
 
     function formatTime24to12(timeStr) {
         if (!timeStr) return '';
@@ -126,25 +138,116 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${hrsStr}:${minutes} ${ampm}`;
     }
 
+    function renderHeaderScheduleBadges(items) {
+        if (!scheduleBadgesRow) return;
+        const listToRender = (items && items.length > 0) ? items : cachedTimingItems;
+        
+        let badgesHtml = listToRender.map(item => {
+            let label = item.label || 'Time';
+            let shortLabel = label.split(' ')[0];
+            if (label.toLowerCase().includes('in')) shortLabel = 'In';
+            else if (label.toLowerCase().includes('late')) shortLabel = 'Late Cutoff';
+            else if (label.toLowerCase().includes('morn')) shortLabel = 'Morn';
+            else if (label.toLowerCase().includes('lunch')) shortLabel = 'Lunch';
+            else if (label.toLowerCase().includes('eve')) shortLabel = 'Eve';
+            else if (label.toLowerCase().includes('out') || label.toLowerCase().includes('depart')) shortLabel = 'Out';
+
+            const iconClass = item.icon || 'fa-clock';
+            const formattedTime = formatTime24to12(item.time);
+
+            return `<span class="badge-item badge-blue" title="${label}"><i class="fa-solid ${iconClass}"></i> ${shortLabel}: <strong>${formattedTime}</strong></span>`;
+        }).join(' ');
+
+        badgesHtml += `
+            <button class="btn btn-emerald-solid btn-xs" id="btnOpenEditTimingsModal" title="Edit Class Schedule & Threshold Timings" style="margin-left: 2px;">
+                <i class="fa-solid fa-clock"></i> Edit Timings
+            </button>
+            <span class="badge-item badge-csv-isolated" title="Isolated CSV Storage"><i class="fa-solid fa-file-csv"></i> CSV isolated</span>
+            <button class="btn btn-outline-danger btn-xs btn-logout" id="btnLogout" title="Logout Class Session" style="margin-left: 4px; padding: 4px 10px;">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+        `;
+
+        scheduleBadgesRow.innerHTML = badgesHtml;
+
+        // Re-attach event listeners for newly injected buttons
+        const newEditBtn = document.getElementById('btnOpenEditTimingsModal');
+        if (newEditBtn) {
+            newEditBtn.addEventListener('click', () => {
+                fetchAndRenderShiftTimings();
+                if (editTimingsModal) editTimingsModal.classList.add('active');
+            });
+        }
+
+        const newLogoutBtn = document.getElementById('btnLogout');
+        if (newLogoutBtn) {
+            newLogoutBtn.addEventListener('click', handleLogout);
+        }
+    }
+
+    function renderModalTimingRows() {
+        if (!timingsContainer) return;
+        if (!cachedTimingItems || cachedTimingItems.length === 0) {
+            timingsContainer.innerHTML = `<p class="text-muted small text-center" style="padding: 15px;">No active schedule timings. Click "Add New Timing Slot" below to create one!</p>`;
+            return;
+        }
+
+        timingsContainer.innerHTML = cachedTimingItems.map((item, idx) => {
+            const timeVal = (item.time || '09:00:00').substring(0, 5);
+            return `
+                <div class="timing-row-card" data-idx="${idx}" style="display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="flex: 1;">
+                        <input type="text" class="form-control form-control-sm timing-label-input" value="${item.label}" placeholder="Timing Label (e.g. Tea Break)" required style="font-weight: 600; font-size: 13px;">
+                    </div>
+                    <div style="width: 130px;">
+                        <input type="time" class="form-control form-control-sm timing-time-input" value="${timeVal}" required style="font-size: 13px;">
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-danger btn-sm btn-remove-timing" data-idx="${idx}" title="Remove this timing slot" style="padding: 4px 8px;">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Attach Remove Click Handlers
+        timingsContainer.querySelectorAll('.btn-remove-timing').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.getAttribute('data-idx'), 10);
+                if (!isNaN(idx) && idx >= 0 && idx < cachedTimingItems.length) {
+                    const removedLabel = cachedTimingItems[idx].label;
+                    cachedTimingItems.splice(idx, 1);
+                    renderModalTimingRows();
+                    showToast(`Removed "${removedLabel}" timing slot. Click "Save Schedule Timings" to confirm.`, 'info');
+                }
+            });
+        });
+    }
+
+    if (btnAddTimingRow) {
+        btnAddTimingRow.addEventListener('click', () => {
+            cachedTimingItems.push({
+                id: `custom_${Date.now()}`,
+                label: `Custom Slot ${cachedTimingItems.length + 1}`,
+                time: "14:00:00",
+                icon: "fa-clock"
+            });
+            renderModalTimingRows();
+        });
+    }
+
     async function fetchAndRenderShiftTimings() {
         try {
             const res = await fetch('/api/get_shift_timings');
             if (!res.ok) return;
             const data = await res.json();
-            if (data.success && data.timings) {
-                const t = data.timings;
-                if (document.getElementById('hdrInTime')) document.getElementById('hdrInTime').textContent = formatTime24to12(t.in_time);
-                if (document.getElementById('hdrMornTime')) document.getElementById('hdrMornTime').textContent = formatTime24to12(t.morn_time);
-                if (document.getElementById('hdrLunchTime')) document.getElementById('hdrLunchTime').textContent = formatTime24to12(t.lunch_time);
-                if (document.getElementById('hdrEveTime')) document.getElementById('hdrEveTime').textContent = formatTime24to12(t.eve_time);
-                if (document.getElementById('hdrOutTime')) document.getElementById('hdrOutTime').textContent = formatTime24to12(t.out_time);
-
-                if (document.getElementById('editInTime')) document.getElementById('editInTime').value = (t.in_time || '09:10:00').substring(0, 5);
-                if (document.getElementById('editLateTime')) document.getElementById('editLateTime').value = (t.late_time || '09:30:00').substring(0, 5);
-                if (document.getElementById('editMornTime')) document.getElementById('editMornTime').value = (t.morn_time || '10:50:00').substring(0, 5);
-                if (document.getElementById('editLunchTime')) document.getElementById('editLunchTime').value = (t.lunch_time || '12:50:00').substring(0, 5);
-                if (document.getElementById('editEveTime')) document.getElementById('editEveTime').value = (t.eve_time || '15:50:00').substring(0, 5);
-                if (document.getElementById('editOutTime')) document.getElementById('editOutTime').value = (t.out_time || '17:10:00').substring(0, 5);
+            if (data.success) {
+                if (data.items && data.items.length > 0) {
+                    cachedTimingItems = data.items;
+                }
+                renderHeaderScheduleBadges(cachedTimingItems);
+                renderModalTimingRows();
             }
         } catch (err) {
             console.error("Error fetching shift timings:", err);
@@ -173,26 +276,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (editTimingsForm) {
         editTimingsForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const payload = {
-                in_time: document.getElementById('editInTime').value + ':00',
-                late_time: document.getElementById('editLateTime').value + ':00',
-                morn_time: document.getElementById('editMornTime').value + ':00',
-                lunch_time: document.getElementById('editLunchTime').value + ':00',
-                eve_time: document.getElementById('editEveTime').value + ':00',
-                out_time: document.getElementById('editOutTime').value + ':00'
-            };
+            
+            // Read active timing values from modal inputs
+            const updatedItems = [];
+            const rows = timingsContainer.querySelectorAll('.timing-row-card');
+            rows.forEach((row, idx) => {
+                const labelInput = row.querySelector('.timing-label-input');
+                const timeInput = row.querySelector('.timing-time-input');
+                const labelVal = labelInput ? labelInput.value.trim() : `Slot ${idx + 1}`;
+                const timeVal = timeInput ? timeInput.value : '09:00';
+                
+                const existingIcon = (cachedTimingItems[idx] && cachedTimingItems[idx].icon) ? cachedTimingItems[idx].icon : 'fa-clock';
+                const existingId = (cachedTimingItems[idx] && cachedTimingItems[idx].id) ? cachedTimingItems[idx].id : `slot_${idx}`;
+
+                updatedItems.push({
+                    id: existingId,
+                    label: labelVal,
+                    time: timeVal + (timeVal.length === 5 ? ':00' : ''),
+                    icon: existingIcon
+                });
+            });
 
             try {
                 const res = await fetch('/api/update_shift_timings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ items: updatedItems })
                 });
                 const data = await res.json();
                 if (res.ok && data.success) {
+                    cachedTimingItems = updatedItems;
                     showToast(data.message || "Updated schedule timings!", 'success');
                     if (editTimingsModal) editTimingsModal.classList.remove('active');
-                    fetchAndRenderShiftTimings();
+                    renderHeaderScheduleBadges(cachedTimingItems);
                     fetchAttendanceData();
                 } else {
                     showToast(data.message || "Failed to update timings.", 'danger');
