@@ -107,10 +107,104 @@ document.addEventListener('DOMContentLoaded', () => {
         if (syncTimeModal) syncTimeModal.classList.remove('active');
     };
 
-    if (btnOpenSyncTimeModal) btnOpenSyncTimeModal.addEventListener('click', openSyncModal);
-    if (liveDateClockBtn) liveDateClockBtn.addEventListener('click', openSyncModal);
-    if (closeSyncTimeModalBtn) closeSyncTimeModalBtn.addEventListener('click', closeSyncModal);
-    if (cancelSyncTimeBtn) cancelSyncTimeBtn.addEventListener('click', closeSyncModal);
+    // Edit Class Timings Modal Elements
+    const editTimingsModal = document.getElementById('editTimingsModal');
+    const btnOpenEditTimingsModal = document.getElementById('btnOpenEditTimingsModal');
+    const closeEditTimingsModalBtn = document.getElementById('closeEditTimingsModalBtn');
+    const cancelEditTimingsBtn = document.getElementById('cancelEditTimingsBtn');
+    const editTimingsForm = document.getElementById('editTimingsForm');
+
+    function formatTime24to12(timeStr) {
+        if (!timeStr) return '';
+        const parts = timeStr.split(':');
+        let hours = parseInt(parts[0], 10);
+        const minutes = parts[1] || '00';
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        const hrsStr = hours < 10 ? '0' + hours : '' + hours;
+        return `${hrsStr}:${minutes} ${ampm}`;
+    }
+
+    async function fetchAndRenderShiftTimings() {
+        try {
+            const res = await fetch('/api/get_shift_timings');
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.success && data.timings) {
+                const t = data.timings;
+                if (document.getElementById('hdrInTime')) document.getElementById('hdrInTime').textContent = formatTime24to12(t.in_time);
+                if (document.getElementById('hdrMornTime')) document.getElementById('hdrMornTime').textContent = formatTime24to12(t.morn_time);
+                if (document.getElementById('hdrLunchTime')) document.getElementById('hdrLunchTime').textContent = formatTime24to12(t.lunch_time);
+                if (document.getElementById('hdrEveTime')) document.getElementById('hdrEveTime').textContent = formatTime24to12(t.eve_time);
+                if (document.getElementById('hdrOutTime')) document.getElementById('hdrOutTime').textContent = formatTime24to12(t.out_time);
+
+                if (document.getElementById('editInTime')) document.getElementById('editInTime').value = (t.in_time || '09:10:00').substring(0, 5);
+                if (document.getElementById('editLateTime')) document.getElementById('editLateTime').value = (t.late_time || '09:30:00').substring(0, 5);
+                if (document.getElementById('editMornTime')) document.getElementById('editMornTime').value = (t.morn_time || '10:50:00').substring(0, 5);
+                if (document.getElementById('editLunchTime')) document.getElementById('editLunchTime').value = (t.lunch_time || '12:50:00').substring(0, 5);
+                if (document.getElementById('editEveTime')) document.getElementById('editEveTime').value = (t.eve_time || '15:50:00').substring(0, 5);
+                if (document.getElementById('editOutTime')) document.getElementById('editOutTime').value = (t.out_time || '17:10:00').substring(0, 5);
+            }
+        } catch (err) {
+            console.error("Error fetching shift timings:", err);
+        }
+    }
+
+    if (btnOpenEditTimingsModal) {
+        btnOpenEditTimingsModal.addEventListener('click', () => {
+            fetchAndRenderShiftTimings();
+            if (editTimingsModal) editTimingsModal.classList.add('active');
+        });
+    }
+
+    if (closeEditTimingsModalBtn) {
+        closeEditTimingsModalBtn.addEventListener('click', () => {
+            if (editTimingsModal) editTimingsModal.classList.remove('active');
+        });
+    }
+
+    if (cancelEditTimingsBtn) {
+        cancelEditTimingsBtn.addEventListener('click', () => {
+            if (editTimingsModal) editTimingsModal.classList.remove('active');
+        });
+    }
+
+    if (editTimingsForm) {
+        editTimingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                in_time: document.getElementById('editInTime').value + ':00',
+                late_time: document.getElementById('editLateTime').value + ':00',
+                morn_time: document.getElementById('editMornTime').value + ':00',
+                lunch_time: document.getElementById('editLunchTime').value + ':00',
+                eve_time: document.getElementById('editEveTime').value + ':00',
+                out_time: document.getElementById('editOutTime').value + ':00'
+            };
+
+            try {
+                const res = await fetch('/api/update_shift_timings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showToast(data.message || "Updated schedule timings!", 'success');
+                    if (editTimingsModal) editTimingsModal.classList.remove('active');
+                    fetchAndRenderShiftTimings();
+                    fetchAttendanceData();
+                } else {
+                    showToast(data.message || "Failed to update timings.", 'danger');
+                }
+            } catch (err) {
+                console.error("Error updating shift timings:", err);
+                showToast("Error connecting to server to update timings.", 'danger');
+            }
+        });
+    }
+
+    fetchAndRenderShiftTimings();
 
     async function applyTimeSync(customTime, isReset = false) {
         try {

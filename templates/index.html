@@ -188,6 +188,57 @@
         </div>
     </div>
 
+    <!-- EDIT CLASS SCHEDULE & THRESHOLD TIMINGS MODAL -->
+    <div class="modal-backdrop" id="editTimingsModal">
+        <div class="modal-card tilt-card" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-clock text-primary"></i> Edit Class Schedule & Threshold Timings</h3>
+                <button type="button" class="close-btn" id="closeEditTimingsModalBtn">&times;</button>
+            </div>
+            <form id="editTimingsForm">
+                <div class="modal-body">
+                    <p class="text-muted small" style="margin-bottom: 12px;">
+                        Update the entry cutoffs, break windows, and departure times. All face scans will evaluate attendance based on these thresholds.
+                    </p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editInTime"><i class="fa-solid fa-right-to-bracket text-success"></i> In Time (On Time Cutoff):</label>
+                            <input type="time" id="editInTime" class="form-control" value="09:10" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editLateTime"><i class="fa-solid fa-triangle-exclamation text-danger"></i> Late Cutoff (to Half-Day):</label>
+                            <input type="time" id="editLateTime" class="form-control" value="09:30" required>
+                        </div>
+                    </div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-group">
+                            <label for="editMornTime"><i class="fa-solid fa-mug-hot text-info"></i> Morning Refresh Break:</label>
+                            <input type="time" id="editMornTime" class="form-control" value="10:50" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editLunchTime"><i class="fa-solid fa-utensils text-warning"></i> Lunch Break Time:</label>
+                            <input type="time" id="editLunchTime" class="form-control" value="12:50" required>
+                        </div>
+                    </div>
+                    <div class="form-row" style="margin-top: 10px;">
+                        <div class="form-group">
+                            <label for="editEveTime"><i class="fa-solid fa-cookie-bite text-primary"></i> Evening Refresh Break:</label>
+                            <input type="time" id="editEveTime" class="form-control" value="15:50" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editOutTime"><i class="fa-solid fa-right-from-bracket text-purple"></i> Departure Out Time:</label>
+                            <input type="time" id="editOutTime" class="form-control" value="17:10" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelEditTimingsBtn">Cancel</button>
+                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Save Schedule Timings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- 2. MAIN CLASSROOM DASHBOARD SECTION -->
     <div class="app-container" id="dashboardSection" style="display: none;">
         <!-- Top Navigation / Header -->
@@ -210,11 +261,14 @@
 
             <div class="header-right-group">
                 <div class="schedule-badges">
-                    <span class="badge-item badge-blue" title="Morning Entrance Cutoff"><i class="fa-solid fa-right-to-bracket"></i> In: <strong>09:10 AM</strong></span>
-                    <span class="badge-item badge-blue" title="Morning Break Window"><i class="fa-solid fa-mug-hot"></i> Morn: <strong>10:50 AM</strong></span>
-                    <span class="badge-item badge-blue" title="Lunch Break Window"><i class="fa-solid fa-utensils"></i> Lunch: <strong>12:50 PM</strong></span>
-                    <span class="badge-item badge-blue" title="Evening Break Window"><i class="fa-solid fa-cookie-bite"></i> Eve: <strong>03:50 PM</strong></span>
-                    <span class="badge-item badge-blue" title="Shift Departure Time"><i class="fa-solid fa-right-from-bracket"></i> Out: <strong>05:10 PM</strong></span>
+                    <span class="badge-item badge-blue" title="Morning Entrance Cutoff"><i class="fa-solid fa-right-to-bracket"></i> In: <strong id="hdrInTime">09:10 AM</strong></span>
+                    <span class="badge-item badge-blue" title="Morning Break Window"><i class="fa-solid fa-mug-hot"></i> Morn: <strong id="hdrMornTime">10:50 AM</strong></span>
+                    <span class="badge-item badge-blue" title="Lunch Break Window"><i class="fa-solid fa-utensils"></i> Lunch: <strong id="hdrLunchTime">12:50 PM</strong></span>
+                    <span class="badge-item badge-blue" title="Evening Break Window"><i class="fa-solid fa-cookie-bite"></i> Eve: <strong id="hdrEveTime">03:50 PM</strong></span>
+                    <span class="badge-item badge-blue" title="Shift Departure Time"><i class="fa-solid fa-right-from-bracket"></i> Out: <strong id="hdrOutTime">05:10 PM</strong></span>
+                    <button class="btn btn-emerald-solid btn-xs" id="btnOpenEditTimingsModal" title="Edit Class Schedule & Threshold Timings" style="margin-left: 2px;">
+                        <i class="fa-solid fa-clock"></i> Edit Timings
+                    </button>
                     <span class="badge-item badge-csv-isolated" title="Isolated CSV Storage"><i class="fa-solid fa-file-csv"></i> CSV isolated</span>
                     <button class="btn btn-outline-danger btn-xs btn-logout" id="btnLogout" title="Logout Class Session" style="margin-left: 4px; padding: 4px 10px;">
                         <i class="fa-solid fa-right-from-bracket"></i> Logout

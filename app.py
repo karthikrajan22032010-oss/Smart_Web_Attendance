@@ -412,6 +412,36 @@ SHIFT_TIMINGS = {
     "OUT_TIME": "17:10:00"             # 05:10 PM
 }
 
+def get_timings_file_path():
+    code = get_class_code()
+    timings_dir = get_storage_subfolder("class_timings")
+    return os.path.join(timings_dir, f"timings_{code}.json")
+
+def load_class_timings():
+    global SHIFT_TIMINGS, CUTOFF_ON_TIME, CUTOFF_LATE, CUTOFF_ABSENT
+    fpath = get_timings_file_path()
+    if os.path.exists(fpath):
+        try:
+            with open(fpath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    if 'in_time' in data:
+                        SHIFT_TIMINGS["IN_TIME_CUTOFF"] = data['in_time']
+                        CUTOFF_ON_TIME = data['in_time']
+                    if 'late_time' in data:
+                        CUTOFF_LATE = data['late_time']
+                        CUTOFF_ABSENT = data['late_time']
+                    if 'morn_time' in data:
+                        SHIFT_TIMINGS["MORNING_REFRESH"] = data['morn_time']
+                    if 'lunch_time' in data:
+                        SHIFT_TIMINGS["LUNCH_BREAK"] = data['lunch_time']
+                    if 'eve_time' in data:
+                        SHIFT_TIMINGS["EVENING_REFRESH"] = data['eve_time']
+                    if 'out_time' in data:
+                        SHIFT_TIMINGS["OUT_TIME"] = data['out_time']
+        except Exception as err:
+            print(f"[WARNING] Error loading class timings: {err}")
+
 CSV_COLUMNS = ["Name", "Date", "In_Time", "Out_Time", "Status", "Morning_Break", "Lunch_Break", "Evening_Break", "Remarks"]
 surveillance_events = []
 
@@ -1402,6 +1432,83 @@ def delete_account():
         "success": True, 
         "message": f"🗑️ Successfully removed class account '{matched_key}'!",
         "was_current_session": is_current
+    })
+
+
+@app.route('/api/get_shift_timings', methods=['GET'])
+def get_shift_timings_api():
+    """API returning current class schedule and threshold timings."""
+    load_class_timings()
+    return jsonify({
+        "success": True,
+        "timings": {
+            "in_time": SHIFT_TIMINGS.get("IN_TIME_CUTOFF", "09:10:00"),
+            "late_time": CUTOFF_LATE,
+            "morn_time": SHIFT_TIMINGS.get("MORNING_REFRESH", "10:50:00"),
+            "lunch_time": SHIFT_TIMINGS.get("LUNCH_BREAK", "12:50:00"),
+            "eve_time": SHIFT_TIMINGS.get("EVENING_REFRESH", "15:50:00"),
+            "out_time": SHIFT_TIMINGS.get("OUT_TIME", "17:10:00")
+        }
+    })
+
+
+@app.route('/api/update_shift_timings', methods=['POST'])
+def update_shift_timings_api():
+    """API to dynamically update and persist class schedule cutoffs and break timings."""
+    global SHIFT_TIMINGS, CUTOFF_ON_TIME, CUTOFF_LATE, CUTOFF_ABSENT
+    data = request.get_json() or {}
+    
+    in_t = data.get('in_time', '09:10:00')
+    late_t = data.get('late_time', '09:30:00')
+    morn_t = data.get('morn_time', '10:50:00')
+    lunch_t = data.get('lunch_time', '12:50:00')
+    eve_t = data.get('eve_time', '15:50:00')
+    out_t = data.get('out_time', '17:10:00')
+
+    if len(in_t) == 5: in_t += ":00"
+    if len(late_t) == 5: late_t += ":00"
+    if len(morn_t) == 5: morn_t += ":00"
+    if len(lunch_t) == 5: lunch_t += ":00"
+    if len(eve_t) == 5: eve_t += ":00"
+    if len(out_t) == 5: out_t += ":00"
+
+    SHIFT_TIMINGS["IN_TIME_CUTOFF"] = in_t
+    CUTOFF_ON_TIME = in_t
+    CUTOFF_LATE = late_t
+    CUTOFF_ABSENT = late_t
+    SHIFT_TIMINGS["MORNING_REFRESH"] = morn_t
+    SHIFT_TIMINGS["LUNCH_BREAK"] = lunch_t
+    SHIFT_TIMINGS["EVENING_REFRESH"] = eve_t
+    SHIFT_TIMINGS["OUT_TIME"] = out_t
+
+    fpath = get_timings_file_path()
+    try:
+        os.makedirs(os.path.dirname(fpath), exist_ok=True)
+        with open(fpath, 'w', encoding='utf-8') as f:
+            json.dump({
+                "in_time": in_t,
+                "late_time": late_t,
+                "morn_time": morn_t,
+                "lunch_time": lunch_t,
+                "eve_time": eve_t,
+                "out_time": out_t
+            }, f, indent=2)
+    except Exception as err:
+        print(f"[WARNING] Error saving shift timings: {err}")
+
+    log_activity(f"[{get_class_code()}] Updated Class Schedule Timings (In: {in_t}, Late: {late_t}, Out: {out_t})", "success")
+
+    return jsonify({
+        "success": True,
+        "message": "🎉 Successfully updated class schedule & threshold timings!",
+        "timings": {
+            "in_time": in_t,
+            "late_time": late_t,
+            "morn_time": morn_t,
+            "lunch_time": lunch_t,
+            "eve_time": eve_t,
+            "out_time": out_t
+        }
     })
 
 
